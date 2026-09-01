@@ -370,12 +370,20 @@ export default function App() {
             <BrainCircuit className="w-6 h-6 animate-pulse" />
           </div>
           <div>
-            <h1 className="font-sans font-bold text-slate-100 tracking-tight text-lg">TRADING OPERATING SYSTEM</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="font-sans font-extrabold text-slate-100 tracking-tight text-lg flex items-center gap-1.5">
+                <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent">NEUROTACTIX</span>
+                <span className="text-slate-400 font-mono text-xs px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800">OS</span>
+              </h1>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950/80 border border-indigo-800 text-indigo-300 font-bold hidden sm:inline">
+                v3.4 ENTERPRISE
+              </span>
+            </div>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block shadow-emerald-400/50 shadow"></span>
               <span className="text-[10px] uppercase font-mono font-bold text-emerald-400">Tactical Control Active</span>
               <span className="text-slate-700 font-mono text-[10px]">•</span>
-              <span className="text-[10px] font-mono text-slate-500">UTC: 2026-05-31 20:11:10</span>
+              <span className="text-[10px] font-mono text-slate-500">Cognitive Execution Engine</span>
             </div>
           </div>
         </div>

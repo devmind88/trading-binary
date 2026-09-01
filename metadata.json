@@ -1,6 +1,6 @@
 {
-  "name": "Binary Options Trading Operating System",
-  "description": "An executive trading cockpit, risk rule enforcer, performance tracker, and voice-controlled trade coach for binary options traders.",
+  "name": "NeuroTactix OS — Cognitive Trading Operating System",
+  "description": "Institutional execution cockpit, cognitive behavioral mentor, volatility intelligence layer, and risk-management operating system for disciplined traders.",
   "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

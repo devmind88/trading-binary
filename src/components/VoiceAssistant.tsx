@@ -19,7 +19,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     {
       id: 'm1',
       sender: 'system',
-      text: 'Trading OS Assistant online. Toggle the speaker option if you wish for auditory feedback. Speak or type commands (e.g., "Show me my PnL calendar", "Give me my daily routine", "I am frustrated").',
+      text: 'NeuroTactix OS Assistant online. Tactical execution engine & cognitive mentor ready. Speak or type commands (e.g., "Show me my PnL calendar", "Give me my daily routine", "Analyze Trader DNA", "Check volatility").',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -235,6 +235,13 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       onNavigate('replay_engine');
       const response = "Opening Institutional Replay Engine. Tick-by-tick historical candlestick simulator active with emotional audit tracking.";
       setTimeout(() => appendSystemMessage(response, 'Replay Engine'), 600);
+      return;
+    }
+
+    if (lower.includes('forecast') || lower.includes('predictive') || lower.includes('probability') || lower.includes('time of day') || lower.includes('time-of-day') || lower.includes('next trade')) {
+      onNavigate('quant_analytics');
+      const response = "Opening Predictive Setup Forecaster. Calculating Bayesian probability, time-of-day alpha distribution, and Kelly sizing for your next trade setup.";
+      setTimeout(() => appendSystemMessage(response, 'Predictive Analytics'), 600);
       return;
     }
 
