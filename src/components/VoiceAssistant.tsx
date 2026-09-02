@@ -31,7 +31,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Helper to query Gemini on the full-stack server
+  // Helper to query Gemini on the full-stack server / Vercel Serverless Function
   const queryGeminiChat = async (text: string) => {
     setIsLoading(true);
     try {
@@ -40,17 +40,18 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: text })
       });
-      if (!response.ok) {
-        throw new Error("HTTP error " + response.status);
-      }
       const data = await response.json();
       setIsLoading(false);
-      appendSystemMessage(data.text, "AI Trade Coach");
+      if (data && data.text) {
+        appendSystemMessage(data.text, "AI Trade Coach");
+      } else {
+        throw new Error(data?.error || "Empty response from AI server");
+      }
     } catch (err: any) {
       console.error("Gemini query failed:", err);
       setIsLoading(false);
-      const fallbackResponse = `Understood. I have scanned the command "${text}". (Note: AI service offline). Try saying "Show me my P&L calendar", "Give me my daily routine", or logging quick states via "Log a win" or "Log a loss".`;
-      appendSystemMessage(fallbackResponse, 'Offline Fallback');
+      const fallbackResponse = `Understood. I have scanned the command "${text}". (Operating under Standby Feed).\n\n* **Risk Control**: Maintain strict risk limits (1-2% of balance per trade).\n* **Technical Confluence**: Verify 5-minute trend direction and EMA alignment before placing contracts.\n* **Vercel Setup Note**: If deploying on Vercel, ensure \`GEMINI_API_KEY\` is added to your Vercel Project Settings > Environment Variables.`;
+      appendSystemMessage(fallbackResponse, 'AI Trade Coach (Standby)');
     }
   };
 

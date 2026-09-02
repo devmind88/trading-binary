@@ -90,7 +90,7 @@ app.post("/api/gemini/chat", async (req, res) => {
 
     const ai = getAI();
     const response = await ai.models.generateContent({
-      model: "gemini-3.7-flash",
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         systemInstruction,
@@ -179,7 +179,7 @@ app.post("/api/gemini/market-news", async (req, res) => {
 
     const ai = getAI();
     const response = await ai.models.generateContent({
-      model: "gemini-3.7-flash",
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         systemInstruction: "You are an expert financial analyst. Deliver an executive summary of high-impact news for binary options traders. Always provide accurate dates and times from today's search results.",
@@ -264,7 +264,7 @@ app.post("/api/gemini/sentiment", async (req, res) => {
 
     const ai = getAI();
     const response = await ai.models.generateContent({
-      model: "gemini-3.7-flash",
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         systemInstruction: "You are a professional technical strategist. Summarize daily sentiment biases objectively with key levels of support and resistance from current market search data.",
@@ -386,7 +386,7 @@ Format with crisp, executive markdown, clean bullet points, and authoritative, c
 
     const ai = getAI();
     const response = await ai.models.generateContent({
-      model: "gemini-3.7-flash",
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         systemInstruction,

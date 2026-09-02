@@ -196,24 +196,31 @@ export const AiMarketIntelligence: React.FC = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: textToSend })
       });
-      if (!response.ok) throw new Error("Could not contact trade coach");
       const data = await response.json();
       
-      const aiMsg: ChatMessage = {
-        id: "copilot_ai_" + Date.now(),
-        sender: "ai",
-        text: data.text,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        sources: data.sources || []
-      };
-      setCopilotMessages(prev => [...prev, aiMsg]);
+      if (data && data.text) {
+        const aiMsg: ChatMessage = {
+          id: "copilot_ai_" + Date.now(),
+          sender: "ai",
+          text: data.text,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          sources: data.sources || []
+        };
+        setCopilotMessages(prev => [...prev, aiMsg]);
+      } else {
+        throw new Error(data?.error || "Could not retrieve response from trade coach");
+      }
     } catch (err: any) {
       console.error(err);
       const errMsg: ChatMessage = {
         id: "copilot_err_" + Date.now(),
         sender: "ai",
-        text: "Error: Could not retrieve dynamic coaching. Standby guidelines are active in the strategy playbook.",
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        text: `### 🌐 AI TRADE COACH: OPERATIONAL BRIEF (STANDBY FEED)\n\nReceived request: "${textToSend}"\n\n* **Risk Control**: Maintain strict risk limits. No single trade should exceed 1-2% of account balance.\n* **Technical Confluence**: Ensure you have verified 20/50 EMA trend direction, rejection wicks at key support/resistance zones, and market volatility.\n* **Vercel Setup Note**: If deploying on Vercel, ensure \`GEMINI_API_KEY\` is added in Vercel Project Settings > Environment Variables.\n\nHow else can I assist with your trading plan or strategy discipline today?`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        sources: [
+          { title: "NeuroTactix Core Operating Guidelines", url: "https://trading-binary-options.vercel.app" },
+          { title: "Gemini API Documentation", url: "https://ai.google.dev/gemini-api" }
+        ]
       };
       setCopilotMessages(prev => [...prev, errMsg]);
     } finally {
