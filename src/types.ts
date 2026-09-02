@@ -71,3 +71,26 @@ export interface AssistantMessage {
   moduleActivated?: string;
   isAudioSpoken?: boolean;
 }
+
+export type UserPlan = 'free' | 'pro' | 'elite';
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  plan: UserPlan;
+  joinedAt: string;
+  adFree: boolean;
+  dailyAiQueriesUsed: number;
+  maxDailyAiQueries: number;
+  billingCycle?: 'monthly' | 'annual';
+  googleAdsenseClientId?: string; // Configurable AdSense Client ID (ca-pub-xxx)
+}
+
+export interface PlanFeature {
+  title: string;
+  free: boolean | string;
+  pro: boolean | string;
+  elite: boolean | string;
+  highlight?: boolean;
+}

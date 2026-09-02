@@ -17,9 +17,13 @@ import {
   FastForward,
   BarChart3,
   Trophy,
-  Brain
+  Brain,
+  Crown,
+  Sparkles,
+  User,
+  Mail
 } from 'lucide-react';
-import { Trade, RiskLimits, ChecklistItem, DailyRoutineState, RuleViolation } from './types';
+import { Trade, RiskLimits, ChecklistItem, DailyRoutineState, RuleViolation, UserProfile, UserPlan } from './types';
 import {
   sampleTrades,
   defaultEntryChecklist,
@@ -44,11 +48,58 @@ import { InstitutionalReplayEngine } from './components/InstitutionalReplayEngin
 import { ProfessionalAnalytics } from './components/ProfessionalAnalytics';
 import { GamificationHub } from './components/GamificationHub';
 import { ExecutionCoach } from './components/ExecutionCoach';
+import { GoogleAdBanner } from './components/GoogleAdBanner';
+import { AuthModal } from './components/AuthModal';
+import { PricingModal } from './components/PricingModal';
+import { PremiumGuardian } from './components/PremiumGuardian';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('plan');
   const [isComplianceOpen, setIsComplianceOpen] = useState<boolean>(false);
   
+  // User Profile & Subscription Tier state
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+    const saved = localStorage.getItem('trading_os_user');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return {
+      id: 'usr_free_default',
+      email: 'trader@neurotactix.trade',
+      name: 'Alex Trader',
+      plan: 'free',
+      joinedAt: new Date().toISOString().split('T')[0],
+      adFree: false,
+      dailyAiQueriesUsed: 1,
+      maxDailyAiQueries: 5,
+      googleAdsenseClientId: 'ca-pub-6822094812390192'
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('trading_os_user', JSON.stringify(currentUser));
+  }, [currentUser]);
+
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState<boolean>(false);
+
+  const handleUpdatePlan = (newPlan: UserPlan, billingCycle: 'monthly' | 'annual') => {
+    setCurrentUser(prev => ({
+      ...prev,
+      plan: newPlan,
+      adFree: newPlan !== 'free',
+      billingCycle,
+      maxDailyAiQueries: newPlan === 'free' ? 5 : Infinity
+    }));
+  };
+
+  const handleUpdatePublisherId = (newId: string) => {
+    setCurrentUser(prev => ({
+      ...prev,
+      googleAdsenseClientId: newId
+    }));
+  };
+
   // Win Streak Toast Notification state
   const [streakToast, setStreakToast] = useState<{
     isOpen: boolean;
@@ -388,8 +439,53 @@ export default function App() {
           </div>
         </div>
 
-        {/* Master Accounts & Compliance Indicator */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Master Accounts, Auth & Compliance Indicator */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
+          {/* Pro Upgrade / Tier Indicator */}
+          {currentUser.plan === 'free' ? (
+            <button
+              onClick={() => setIsPricingModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-indigo-500/20 to-emerald-500/20 border border-amber-500/40 text-amber-300 hover:text-amber-200 transition text-xs font-mono shadow-md shadow-amber-950/20 cursor-pointer"
+              title="Upgrade to Pro Plan ($29/mo) - Remove all ads and unlock Monte Carlo Ruin Engine"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              <span className="font-bold">Upgrade to Pro</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/30 text-amber-200 hidden sm:inline">No Ads</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsPricingModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-950 border border-indigo-600/60 text-indigo-300 hover:text-indigo-200 transition text-xs font-mono shadow"
+              title="Manage Pro Trader Subscription"
+            >
+              <Crown className="w-3.5 h-3.5 text-amber-400" />
+              <span className="font-bold uppercase">{currentUser.plan} Active</span>
+            </button>
+          )}
+
+          {/* User Account & Email Login Button */}
+          <button
+            onClick={() => setIsAuthModalOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-200 hover:text-white transition text-xs font-mono"
+            title="Manage Trader Account & Email Sign-In"
+          >
+            <div className="w-5 h-5 rounded-md bg-indigo-950 border border-indigo-800 flex items-center justify-center text-[10px] font-bold text-indigo-400">
+              {currentUser.name ? currentUser.name.slice(0, 1).toUpperCase() : 'T'}
+            </div>
+            <span className="max-w-[120px] truncate hidden sm:inline text-slate-300 font-medium">
+              {currentUser.email || currentUser.name}
+            </span>
+            <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border ${
+              currentUser.plan === 'pro' 
+                ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                : currentUser.plan === 'elite'
+                ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                : 'bg-slate-800 text-slate-400 border-slate-700'
+            }`}>
+              {currentUser.plan}
+            </span>
+          </button>
+
           {currentWinStreakInfo.streak >= 3 && (
             <button
               onClick={() => handleTriggerStreakCelebration()}
@@ -411,9 +507,9 @@ export default function App() {
             <span className="hidden sm:inline">Store & Legal</span>
           </button>
 
-          <div className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-right">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-right">
             <span className="text-[9px] uppercase tracking-wider text-slate-500 block font-mono">Master Balance</span>
-            <span className="text-md font-mono text-emerald-400 font-semibold">${currentBalance.toFixed(2)}</span>
+            <span className="text-sm font-mono text-emerald-400 font-semibold">${currentBalance.toFixed(2)}</span>
           </div>
 
           <button
@@ -430,8 +526,15 @@ export default function App() {
       <main className="flex-1 max-w-[1600px] w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-[calc(100vh-130px)] lg:overflow-hidden">
         
         {/* Left Interactive Control board (8 columns) */}
-        <section className="lg:col-span-8 flex flex-col gap-6 lg:overflow-y-auto pr-1">
+        <section className="lg:col-span-8 flex flex-col gap-5 lg:overflow-y-auto pr-1">
           
+          {/* Google AdSense / Sponsor Banner (Only shown for Free Plan) */}
+          <GoogleAdBanner
+            user={currentUser}
+            onOpenPricing={() => setIsPricingModalOpen(true)}
+            format="horizontal"
+          />
+
           {/* Navigation Control bar */}
           <nav className="bg-slate-900 border border-slate-805/80 p-1 rounded-xl flex items-center justify-between overflow-x-auto gap-1">
             <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
@@ -566,6 +669,19 @@ export default function App() {
               >
                 <BrainCircuit className="w-4 h-4 shrink-0 text-indigo-400 animate-pulse" /> AI INTELLIGENCE
               </button>
+
+              <button
+                onClick={() => setActiveTab('premium_guardian')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono font-semibold transition ${
+                  activeTab === 'premium_guardian'
+                    ? 'bg-gradient-to-r from-indigo-950 to-purple-950 text-amber-300 border border-amber-500/50 shadow-md'
+                    : 'text-amber-400/90 hover:text-amber-300 hover:bg-slate-950/40'
+                }`}
+              >
+                <Crown className="w-4 h-4 shrink-0 text-amber-400" />
+                <span>PRO GUARDIAN</span>
+                <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">PRO</span>
+              </button>
             </div>
           </nav>
 
@@ -653,6 +769,15 @@ export default function App() {
             {activeTab === 'ai_intelligence' && (
               <AiMarketIntelligence />
             )}
+
+            {activeTab === 'premium_guardian' && (
+              <PremiumGuardian
+                trades={trades}
+                riskLimits={riskLimits}
+                user={currentUser}
+                onOpenPricing={() => setIsPricingModalOpen(true)}
+              />
+            )}
           </div>
         </section>
 
@@ -698,6 +823,27 @@ export default function App() {
         streakPnl={streakToast.streakPnl}
         autoCloseMs={6000}
         onViewCalendar={() => setActiveTab('calendar')}
+      />
+
+      {/* User Authentication & Profile Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        currentUser={currentUser}
+        onUpdateUser={setCurrentUser}
+        onOpenPricing={() => {
+          setIsAuthModalOpen(false);
+          setIsPricingModalOpen(true);
+        }}
+      />
+
+      {/* Tiered Subscription & Monetization Pricing Modal */}
+      <PricingModal
+        isOpen={isPricingModalOpen}
+        onClose={() => setIsPricingModalOpen(false)}
+        currentUser={currentUser}
+        onUpdatePlan={handleUpdatePlan}
+        onUpdatePublisherId={handleUpdatePublisherId}
       />
 
     </div>
