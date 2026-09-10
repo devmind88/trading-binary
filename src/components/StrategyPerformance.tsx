@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { apiUrl } from '../lib/api';
 import ReactMarkdown from 'react-markdown';
 import { Trade, StrategyId, StrategyDefinition } from '../types';
 import { approvedStrategies } from '../data';
@@ -280,7 +281,7 @@ export const StrategyPerformance: React.FC<StrategyPerformanceProps> = ({ trades
   const handleGenerateAiDiagnosis = async () => {
     setIsLoadingAi(true);
     try {
-      const response = await fetch('/api/gemini/psychological-diagnosis', {
+      const response = await fetch(apiUrl('/api/gemini/psychological-diagnosis'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

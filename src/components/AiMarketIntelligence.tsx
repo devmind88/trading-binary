@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { apiUrl } from "../lib/api";
 import { 
   Brain, 
   Search, 
@@ -132,7 +133,7 @@ export const AiMarketIntelligence: React.FC = () => {
     setNewsReport("");
     setNewsSources([]);
     try {
-      const response = await fetch("/api/gemini/market-news", {
+      const response = await fetch(apiUrl("/api/gemini/market-news"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currencyFilter: filterVal || currencyFilter })
@@ -156,7 +157,7 @@ export const AiMarketIntelligence: React.FC = () => {
     setSentimentReport("");
     setSentimentSources([]);
     try {
-      const response = await fetch("/api/gemini/sentiment", {
+      const response = await fetch(apiUrl("/api/gemini/sentiment"), {
         method: "POST",
         headers: { "Content-Type": "application/json" }
       });
@@ -191,7 +192,7 @@ export const AiMarketIntelligence: React.FC = () => {
     setIsLoadingCopilot(true);
 
     try {
-      const response = await fetch("/api/gemini/chat", {
+      const response = await fetch(apiUrl("/api/gemini/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: textToSend })

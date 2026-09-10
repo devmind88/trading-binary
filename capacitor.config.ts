@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.secondchance.binaryoptionsos',
-  appName: 'Binary Options OS',
+  appName: 'NeuroTactix OS',
   webDir: 'dist',
   server: {
     androidScheme: 'https',

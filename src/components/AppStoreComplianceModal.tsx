@@ -212,10 +212,10 @@ export const AppStoreComplianceModal: React.FC<AppStoreComplianceModalProps> = (
                 <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
                   <div className="flex items-center justify-between text-slate-200">
                     <span className="font-bold flex items-center gap-1.5"><Apple className="w-4 h-4 text-indigo-400" /> Apple App Store Metadata</span>
-                    <span className="text-[10px] text-emerald-400 bg-emerald-950 px-1.5 py-0.5 rounded">Configured</span>
+                    <span className="text-[10px] text-amber-400 bg-amber-950 px-1.5 py-0.5 rounded">Native setup pending</span>
                   </div>
                   <div className="space-y-1.5 text-slate-400">
-                    <div><span className="text-slate-500">App Name:</span> Binary Options OS: Journal & Coach</div>
+                    <div><span className="text-slate-500">App Name:</span> NeuroTactix OS</div>
                     <div><span className="text-slate-500">Bundle ID:</span> <code className="text-indigo-300">com.secondchance.binaryoptionsos</code></div>
                     <div><span className="text-slate-500">Primary Category:</span> Finance / Productivity</div>
                     <div><span className="text-slate-500">Age Rating:</span> 17+ (Frequent Financial Analysis)</div>
@@ -226,10 +226,10 @@ export const AppStoreComplianceModal: React.FC<AppStoreComplianceModalProps> = (
                 <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
                   <div className="flex items-center justify-between text-slate-200">
                     <span className="font-bold flex items-center gap-1.5"><Smartphone className="w-4 h-4 text-emerald-400" /> Google Play Console Metadata</span>
-                    <span className="text-[10px] text-emerald-400 bg-emerald-950 px-1.5 py-0.5 rounded">Configured</span>
+                    <span className="text-[10px] text-amber-400 bg-amber-950 px-1.5 py-0.5 rounded">Native setup pending</span>
                   </div>
                   <div className="space-y-1.5 text-slate-400">
-                    <div><span className="text-slate-500">App Title:</span> Binary Options Trading Journal OS</div>
+                    <div><span className="text-slate-500">App Title:</span> NeuroTactix OS</div>
                     <div><span className="text-slate-500">Package Name:</span> <code className="text-emerald-300">com.secondchance.binaryoptionsos</code></div>
                     <div><span className="text-slate-500">Category:</span> Finance (Tools & Trackers)</div>
                     <div><span className="text-slate-500">Financial Decl.:</span> Non-Custodial Journaling Tool</div>
@@ -249,9 +249,9 @@ export const AppStoreComplianceModal: React.FC<AppStoreComplianceModalProps> = (
                 
                 <div className="space-y-2 text-xs font-mono">
                   {[
-                    { label: "1. Build Web Assets & Capacitor Sync", cmd: "npm run build && npx cap sync" },
-                    { label: "2. Open in Xcode (for iOS .ipa export)", cmd: "npx cap open ios" },
-                    { label: "3. Open in Android Studio (for .aab bundle)", cmd: "npx cap open android" }
+                    { label: "1. Generate Android project (once)", cmd: "npm run cap:add:android" },
+                    { label: "2. Build Web Assets & Capacitor Sync", cmd: "npm run cap:android:build" },
+                    { label: "3. Open in Android Studio (for .aab bundle)", cmd: "npm run cap:android" }
                   ].map((item, idx) => (
                     <div key={idx} className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
                       <div>
@@ -278,7 +278,7 @@ export const AppStoreComplianceModal: React.FC<AppStoreComplianceModalProps> = (
                   </span>
                   <button
                     onClick={() => handleCopy(
-                      "Binary Options Trading OS is an executive trading journal, risk manager, and discipline coach. It does not execute live trades, hold customer deposits, or connect to brokerage accounts. All logs and risk rules are tracked for personal education and statistical review.",
+                      "NeuroTactix OS is an executive trading journal, risk manager, and discipline coach. It does not execute live trades, hold customer deposits, or connect to brokerage accounts. All logs and risk rules are tracked for personal education and statistical review.",
                       "review_notes"
                     )}
                     className="text-[11px] font-mono text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
@@ -288,7 +288,7 @@ export const AppStoreComplianceModal: React.FC<AppStoreComplianceModalProps> = (
                   </button>
                 </div>
                 <p className="text-slate-400 font-sans leading-relaxed text-[11px] bg-slate-900 p-3 rounded border border-slate-800">
-                  "Binary Options Trading OS is an executive trading journal, risk manager, and discipline coach. It does not execute live trades, hold customer deposits, or connect to brokerage accounts. All logs and risk rules are tracked for personal education and statistical review."
+                  "NeuroTactix OS is an executive trading journal, risk manager, and discipline coach. It does not execute live trades, hold customer deposits, or connect to brokerage accounts. All logs and risk rules are tracked for personal education and statistical review."
                 </p>
               </div>
 
@@ -300,7 +300,7 @@ export const AppStoreComplianceModal: React.FC<AppStoreComplianceModalProps> = (
         {/* Footer */}
         <div className="p-4 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between text-xs font-mono">
           <span className="text-slate-500">
-            Capacitor 7.x &bull; iOS & Android Ready &bull; WCAG AA Compliant
+            Capacitor 8.x &bull; Native project setup required &bull; WCAG AA Compliant
           </span>
           <button
             onClick={onClose}

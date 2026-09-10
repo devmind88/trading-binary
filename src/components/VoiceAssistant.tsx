@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { apiUrl } from '../lib/api';
 import { Mic as MicIcon, MicOff as MicOffIcon, Send as SendIcon, Volume2 as VolumeIcon, VolumeX as VolumeXIcon, Brain as BrainIcon, Terminal } from 'lucide-react';
 import { AssistantMessage, Trade, StrategyId, TradingSession } from '../types';
 
@@ -35,7 +36,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
   const queryGeminiChat = async (text: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/gemini/chat", {
+      const response = await fetch(apiUrl("/api/gemini/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: text })
