@@ -218,7 +218,7 @@ export const AiMarketIntelligence: React.FC = () => {
         text: `### 🌐 AI TRADE COACH: OPERATIONAL BRIEF (STANDBY FEED)\n\nReceived request: "${textToSend}"\n\n* **Risk Control**: Maintain strict risk limits. No single trade should exceed 1-2% of account balance.\n* **Technical Confluence**: Ensure you have verified 20/50 EMA trend direction, rejection wicks at key support/resistance zones, and market volatility.\n* **Vercel Setup Note**: If deploying on Vercel, ensure \`GEMINI_API_KEY\` is added in Vercel Project Settings > Environment Variables.\n\nHow else can I assist with your trading plan or strategy discipline today?`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         sources: [
-          { title: "NeuroTactix Core Operating Guidelines", url: "https://trading-binary-options.vercel.app" },
+          { title: "NeuroTactix Core Operating Guidelines", url: "https://neurotactix-terminal.vercel.app" },
           { title: "Gemini API Documentation", url: "https://ai.google.dev/gemini-api" }
         ]
       };
@@ -317,7 +317,7 @@ export const AiMarketIntelligence: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-950/30 p-3.5 rounded-xl border border-slate-850">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-                <span className="text-xs text-slate-300 font-sans">Pause binary contracts during major high-impact news releases to avoid unexpected price spikes.</span>
+                <span className="text-xs text-slate-300 font-sans">Pause order executions during major high-impact news releases to avoid unexpected price spikes and slippage.</span>
               </div>
               
               <div className="flex items-center gap-2">

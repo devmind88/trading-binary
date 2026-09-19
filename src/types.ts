@@ -14,6 +14,8 @@ export interface StrategyDefinition {
 
 export type TradingSession = 'Morning' | 'Midday' | 'Evening';
 
+export type ExecutionType = 'LONG' | 'SHORT' | 'CALL' | 'PUT';
+
 export interface ChecklistItem {
   id: string;
   text: string;
@@ -25,15 +27,30 @@ export interface Trade {
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
   strategyId: StrategyId;
-  type: 'CALL' | 'PUT';
-  amount: number;
+  type: ExecutionType; // 'LONG' | 'SHORT' (with legacy CALL/PUT backward-compatibility)
+  amount: number; // Position Size / Risk Allocation ($)
   result: 'WIN' | 'LOSS' | 'TIE';
-  payoutRate: number; // e.g. 82 for 82%
+  payoutRate: number; // Target Risk:Reward or Expected Return %
+  targetRr?: string; // e.g. '1:1.5', '1:2', '1:3'
+  holdingHorizon?: string; // e.g. '5m', '15m', '1H', '4H'
+  market?: string; // e.g. 'NQ Futures', 'ES Futures', 'EUR/USD', 'Gold', 'AAPL'
   pnl: number; // positive for WIN, negative for LOSS, 0 for TIE
   session: TradingSession;
   isEmotional: boolean;
   positionConsistencyChecked: boolean; // checks if within 1-2%
   notes: string;
+}
+
+export interface AccountSetupConfig {
+  startingBalance: number;
+  maxDailyLossPercent: number;
+  maxWeeklyLossPercent: number;
+  primaryMarkets: string[];
+  executionStyle: 'Scalping' | 'Day Trading' | 'Swing Trading';
+  defaultRiskReward: string;
+  maxDailyTradesCount: number;
+  maxTradeRiskPercent: number;
+  loadSampleLedger?: boolean;
 }
 
 export interface RiskLimits {

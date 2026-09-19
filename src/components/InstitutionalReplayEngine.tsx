@@ -36,7 +36,7 @@ interface ReplayTradeDecision {
   id: string;
   candleIndex: number;
   timestamp: string;
-  type: 'CALL' | 'PUT';
+  type: 'LONG' | 'SHORT' | 'CALL' | 'PUT';
   entryPrice: number;
   expiryCandleIndex: number;
   exitPrice?: number;
@@ -127,7 +127,7 @@ export const InstitutionalReplayEngine: React.FC = () => {
           if (exitCandle) {
             const exitPrice = exitCandle.close;
             let isWin = false;
-            if (trade.type === 'CALL') {
+            if (trade.type === 'LONG' || trade.type === 'CALL') {
               isWin = exitPrice > trade.entryPrice;
             } else {
               isWin = exitPrice < trade.entryPrice;
@@ -148,12 +148,12 @@ export const InstitutionalReplayEngine: React.FC = () => {
   }, [currentStep, initialCandles, simPayout]);
 
   // Handle Placing a Replay Trade
-  const handleExecuteReplayTrade = (type: 'CALL' | 'PUT') => {
+  const handleExecuteReplayTrade = (type: 'LONG' | 'SHORT') => {
     const currentCandle = initialCandles[currentStep];
     if (!currentCandle) return;
 
     // Apply simulated slippage
-    const slippageDelta = (simSlippagePips / 10000) * (type === 'CALL' ? 1 : -1);
+    const slippageDelta = (simSlippagePips / 10000) * (type === 'LONG' ? 1 : -1);
     const actualEntry = parseFloat((currentCandle.close + slippageDelta).toFixed(5));
 
     const newTrade: ReplayTradeDecision = {
@@ -420,7 +420,7 @@ export const InstitutionalReplayEngine: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-[10px] font-mono text-slate-400 block">Contract Stake ($):</label>
+                <label className="text-[10px] font-mono text-slate-400 block">Position Size / Risk ($):</label>
                 <input
                   type="number"
                   value={replayStake}
@@ -469,22 +469,22 @@ export const InstitutionalReplayEngine: React.FC = () => {
               </div>
             </div>
 
-            {/* CALL / PUT Action Triggers */}
+            {/* Execution Action Triggers */}
             <div className="grid grid-cols-2 gap-4 pt-1">
               <button
-                onClick={() => handleExecuteReplayTrade('CALL')}
+                onClick={() => handleExecuteReplayTrade('LONG')}
                 className="py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold font-mono text-sm transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-950/50"
               >
                 <TrendingUp className="w-4 h-4" />
-                <span>BUY HIGHER (CALL)</span>
+                <span>LONG EXECUTION</span>
               </button>
 
               <button
-                onClick={() => handleExecuteReplayTrade('PUT')}
+                onClick={() => handleExecuteReplayTrade('SHORT')}
                 className="py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold font-mono text-sm transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-rose-950/50"
               >
                 <TrendingDown className="w-4 h-4" />
-                <span>BUY LOWER (PUT)</span>
+                <span>SHORT EXECUTION</span>
               </button>
             </div>
 
@@ -549,8 +549,8 @@ export const InstitutionalReplayEngine: React.FC = () => {
                 executedReplayTrades.map((t, idx) => (
                   <div key={t.id} className="p-2.5 rounded-lg bg-slate-950 border border-slate-850 space-y-1">
                     <div className="flex items-center justify-between text-xs font-mono">
-                      <span className={`font-bold ${t.type === 'CALL' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        #{idx + 1} {t.type} @ ${t.entryPrice}
+                      <span className={`font-bold ${t.type === 'LONG' || t.type === 'CALL' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        #{idx + 1} {t.type === 'CALL' ? 'LONG' : t.type === 'PUT' ? 'SHORT' : t.type} @ ${t.entryPrice}
                       </span>
                       {t.result ? (
                         <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${

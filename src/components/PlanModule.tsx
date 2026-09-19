@@ -204,7 +204,7 @@ export const PlanModule: React.FC<PlanModuleProps> = ({
           </div>
 
           <p className="text-xs text-slate-400 mb-4">
-            You must pass and log every check prior to pressing trade on the Binary Options Broker. Disorganized inputs yield erratic results.
+            You must pass and verify every risk check prior to submitting an execution order to the market. Disorganized inputs yield erratic results.
           </p>
 
           <div className="space-y-2.5">
@@ -258,7 +258,7 @@ export const PlanModule: React.FC<PlanModuleProps> = ({
             </div>
 
             <p className="text-xs text-slate-400 mb-4 leading-relaxed">
-              Binary options trading should only occur during highly active liquidity sessions. Avoid consolidation dead hours.
+              Active derivative execution should strictly occur during institutional liquidity sessions. Avoid consolidation dead hours.
             </p>
 
             <div className="space-y-3 font-mono text-xs text-slate-300">

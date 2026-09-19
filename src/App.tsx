@@ -21,9 +21,13 @@ import {
   Crown,
   Sparkles,
   User,
-  Mail
+  Mail,
+  SlidersHorizontal,
+  Terminal,
+  X,
+  ChevronUp
 } from 'lucide-react';
-import { Trade, RiskLimits, ChecklistItem, DailyRoutineState, RuleViolation, UserProfile, UserPlan } from './types';
+import { Trade, RiskLimits, ChecklistItem, DailyRoutineState, RuleViolation, UserProfile, UserPlan, AccountSetupConfig } from './types';
 import {
   sampleTrades,
   defaultEntryChecklist,
@@ -52,6 +56,7 @@ import { GoogleAdBanner } from './components/GoogleAdBanner';
 import { AuthModal } from './components/AuthModal';
 import { PricingModal } from './components/PricingModal';
 import { PremiumGuardian } from './components/PremiumGuardian';
+import { QuickStartModal } from './components/QuickStartModal';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('plan');
@@ -110,6 +115,42 @@ export default function App() {
     streakCount: 0,
     streakPnl: 0
   });
+
+  // Zero-State & Account Setup Modal
+  const [isQuickStartOpen, setIsQuickStartOpen] = useState<boolean>(() => {
+    const initialized = localStorage.getItem('neurotactix_account_initialized');
+    return !initialized;
+  });
+  const [isMobileCommandDrawerOpen, setIsMobileCommandDrawerOpen] = useState<boolean>(false);
+
+  const handleSaveAccountSetup = (config: AccountSetupConfig) => {
+    setRiskLimits(prev => ({
+      ...prev,
+      startingBalance: config.startingBalance,
+      currentBalance: config.startingBalance,
+      maxDailyLossPercent: config.maxDailyLossPercent,
+      maxTradeSizePercent: config.maxTradeRiskPercent,
+      minTradeSizePercent: Math.max(0.25, parseFloat((config.maxTradeRiskPercent / 2).toFixed(2))),
+    }));
+
+    if (config.loadSampleLedger) {
+      setTrades(sampleTrades.map(t => {
+        const riskPerTrade = Math.round(config.startingBalance * (config.maxTradeRiskPercent / 100));
+        return {
+          ...t,
+          market: config.primaryMarkets?.[0] || 'NQ Futures',
+          amount: riskPerTrade,
+          pnl: t.result === 'WIN' ? Math.round(riskPerTrade * (t.payoutRate / 100)) : -riskPerTrade
+        };
+      }));
+    } else {
+      setTrades([]);
+    }
+
+    localStorage.setItem('neurotactix_account_initialized', 'true');
+    localStorage.setItem('neurotactix_account_config', JSON.stringify(config));
+    setIsQuickStartOpen(false);
+  };
   
   // 1. Trade States (Synchronized via Local Storage)
   const [trades, setTrades] = useState<Trade[]>(() => {
@@ -259,7 +300,7 @@ export default function App() {
       list.push({
         id: 'v_mart_' + Date.now(),
         type: 'MARTINGALE_BEHAVIOR',
-        message: 'Discipline error: size leverage increased immediately following a lost contract. Stop doubling balance.',
+        message: 'Discipline error: position size increased immediately following a loss. Cease Martingale doubling.',
         severity: 'critical',
         timestamp: new Date().toLocaleTimeString()
       });
@@ -271,7 +312,7 @@ export default function App() {
       list.push({
         id: 'v_emot_' + Date.now(),
         type: 'EMOTIONAL_TRADING',
-        message: `${emotionalTodayCount} contracts registered today with emotional/impatience identifiers. Restoring mindfulness context.`,
+        message: `${emotionalTodayCount} executions registered today with emotional/impatience identifiers. Restoring mindfulness context.`,
         severity: 'warning',
         timestamp: new Date().toLocaleTimeString()
       });
@@ -280,7 +321,7 @@ export default function App() {
     return list;
   }, [trades, riskLimits]);
 
-  // 6. Dynamic Win Streak Calculation (Tracking consecutive winning contracts)
+  // 6. Dynamic Win Streak Calculation (Tracking consecutive winning executions)
   const currentWinStreakInfo = useMemo(() => {
     if (!trades || trades.length === 0) return { streak: 0, pnl: 0, latestTradeId: '' };
     const sorted = [...trades].sort((a, b) => {
@@ -343,18 +384,21 @@ export default function App() {
 
   // Reset all user data completely helper
   const handleClearData = () => {
-    if (window.confirm('Are you absolutely sure you want to delete all historical logs, risk limits, and checklists? This action is irreversible.')) {
-      localStorage.clear();
+    if (window.confirm('Reset terminal parameters and clear execution ledger? This lets you reconfigure realistic initial parameters.')) {
+      localStorage.removeItem('trading_os_trades');
+      localStorage.removeItem('trading_os_limits');
+      localStorage.removeItem('neurotactix_account_initialized');
+      localStorage.removeItem('neurotactix_account_config');
       setTrades([]);
       setRiskLimits({
-        startingBalance: 1000,
-        currentBalance: 1000,
-        maxDailyLossPercent: 5,
-        maxWeeklyLossPercent: 15,
-        maxDailyTradesCount: 10,
+        startingBalance: 10000,
+        currentBalance: 10000,
+        maxDailyLossPercent: 4,
+        maxWeeklyLossPercent: 10,
+        maxDailyTradesCount: 8,
         maxConsecutiveLossesAllowed: 3,
-        minTradeSizePercent: 1,
-        maxTradeSizePercent: 2
+        minTradeSizePercent: 0.5,
+        maxTradeSizePercent: 1.5
       });
       setChecklist(defaultEntryChecklist);
       setRoutineState({
@@ -364,6 +408,7 @@ export default function App() {
         currentMood: 'Focused & Calm',
         notes: ''
       });
+      setIsQuickStartOpen(true);
     }
   };
 
@@ -395,7 +440,7 @@ export default function App() {
       date: todayStr,
       time: timeStr,
       strategyId: 'trend_continuation',
-      type: 'CALL',
+      type: 'LONG',
       amount: size,
       result,
       payoutRate: payout,
@@ -403,7 +448,7 @@ export default function App() {
       session,
       isEmotional: false,
       positionConsistencyChecked: isConsistent,
-      notes: 'Voice logged contract creation.'
+      notes: 'Voice logged execution creation.'
     };
 
     setTrades(prev => [voiceTrade, ...prev]);
@@ -413,112 +458,127 @@ export default function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-slate-950">
       
       {/* Primary Top Header Frame */}
-      <header className="border-b border-slate-900 bg-slate-950 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
-        
-        {/* Logo and online status */}
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-indigo-950 rounded-xl border border-indigo-850/60 shadow-lg text-indigo-400">
-            <BrainCircuit className="w-6 h-6 animate-pulse" />
+      <header className="border-b border-slate-900 bg-slate-950 px-4 sm:px-6 py-3 shrink-0">
+        <div className="flex items-center justify-between gap-3">
+          {/* Logo and system status */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="p-2 sm:p-2.5 bg-indigo-950 rounded-xl border border-indigo-850/60 shadow-lg text-indigo-400 shrink-0">
+              <BrainCircuit className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h1 className="font-sans font-extrabold text-slate-100 tracking-tight text-base sm:text-lg flex items-center gap-1">
+                  <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent">NEUROTACTIX</span>
+                  <span className="text-slate-400 font-mono text-[10px] sm:text-xs px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800">OS</span>
+                </h1>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-950/80 border border-indigo-800 text-indigo-300 font-bold hidden md:inline">
+                  v3.4 ENTERPRISE
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block shadow-emerald-400/50 shadow"></span>
+                <span className="text-[9px] sm:text-[10px] uppercase font-mono font-bold text-emerald-400">Tactical Control Active</span>
+                <span className="text-slate-700 font-mono text-[9px] hidden sm:inline">•</span>
+                <span className="text-[9px] sm:text-[10px] font-mono text-slate-500 hidden sm:inline">Quantitative Execution Terminal</span>
+              </div>
+            </div>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-sans font-extrabold text-slate-100 tracking-tight text-lg flex items-center gap-1.5">
-                <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent">NEUROTACTIX</span>
-                <span className="text-slate-400 font-mono text-xs px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800">OS</span>
-              </h1>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950/80 border border-indigo-800 text-indigo-300 font-bold hidden sm:inline">
-                v3.4 ENTERPRISE
+
+          {/* Master Accounts, Balance & Quick Setup */}
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            {/* Master Balance Pill */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1 sm:px-3 sm:py-1.5 text-right">
+              <span className="text-[8px] sm:text-[9px] uppercase tracking-wider text-slate-500 block font-mono">Master Balance</span>
+              <span className="text-xs sm:text-sm font-mono text-emerald-400 font-semibold">${currentBalance.toFixed(2)}</span>
+            </div>
+
+            {/* Account Parameters Setup Button */}
+            <button
+              onClick={() => setIsQuickStartOpen(true)}
+              className="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-600 text-slate-400 hover:text-indigo-300 transition"
+              title="Terminal Parameters & Prop Firm Sizing Setup"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+            </button>
+
+            {/* User Account & Profile Button */}
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-200 transition text-xs font-mono"
+              title="Manage Trader Account & Email Sign-In"
+            >
+              <div className="w-5 h-5 rounded-md bg-indigo-950 border border-indigo-800 flex items-center justify-center text-[10px] font-bold text-indigo-400 shrink-0">
+                {currentUser.name ? currentUser.name.slice(0, 1).toUpperCase() : 'T'}
+              </div>
+              <span className="max-w-[100px] truncate hidden md:inline text-slate-300 font-medium">
+                {currentUser.email || currentUser.name}
               </span>
-            </div>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block shadow-emerald-400/50 shadow"></span>
-              <span className="text-[10px] uppercase font-mono font-bold text-emerald-400">Tactical Control Active</span>
-              <span className="text-slate-700 font-mono text-[10px]">•</span>
-              <span className="text-[10px] font-mono text-slate-500">Cognitive Execution Engine</span>
-            </div>
+              <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border hidden sm:inline ${
+                currentUser.plan === 'pro' 
+                  ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                  : currentUser.plan === 'elite'
+                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                  : 'bg-slate-800 text-slate-400 border-slate-700'
+              }`}>
+                {currentUser.plan}
+              </span>
+            </button>
           </div>
         </div>
 
-        {/* Master Accounts, Auth & Compliance Indicator */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
-          {/* Pro Upgrade / Tier Indicator */}
-          {currentUser.plan === 'free' ? (
-            <button
-              onClick={() => setIsPricingModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-indigo-500/20 to-emerald-500/20 border border-amber-500/40 text-amber-300 hover:text-amber-200 transition text-xs font-mono shadow-md shadow-amber-950/20 cursor-pointer"
-              title="Upgrade to Pro Plan ($29/mo) - Remove all ads and unlock Monte Carlo Ruin Engine"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-              <span className="font-bold">Upgrade to Pro</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/30 text-amber-200 hidden sm:inline">No Ads</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => setIsPricingModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-950 border border-indigo-600/60 text-indigo-300 hover:text-indigo-200 transition text-xs font-mono shadow"
-              title="Manage Pro Trader Subscription"
-            >
-              <Crown className="w-3.5 h-3.5 text-amber-400" />
-              <span className="font-bold uppercase">{currentUser.plan} Active</span>
-            </button>
-          )}
+        {/* Secondary Action Ribbon - Clean Horizontal Row */}
+        <div className="mt-2.5 pt-2 border-t border-slate-900/80 flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-2 shrink-0">
+            {currentUser.plan === 'free' ? (
+              <button
+                onClick={() => setIsPricingModalOpen(true)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-500/20 via-indigo-500/20 to-emerald-500/20 border border-amber-500/40 text-amber-300 hover:text-amber-200 transition text-[11px] font-mono shadow-sm cursor-pointer whitespace-nowrap"
+                title="Upgrade to Pro Plan ($29/mo) - Remove all ads"
+              >
+                <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
+                <span className="font-bold">Upgrade Pro</span>
+                <span className="text-[9px] px-1 rounded bg-amber-500/30 text-amber-200">No Ads</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsPricingModalOpen(true)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-950 border border-indigo-600/60 text-indigo-300 hover:text-indigo-200 transition text-[11px] font-mono shadow-sm whitespace-nowrap"
+              >
+                <Crown className="w-3 h-3 text-amber-400" />
+                <span className="font-bold uppercase">{currentUser.plan} Active</span>
+              </button>
+            )}
 
-          {/* User Account & Email Login Button */}
-          <button
-            onClick={() => setIsAuthModalOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-200 hover:text-white transition text-xs font-mono"
-            title="Manage Trader Account & Email Sign-In"
-          >
-            <div className="w-5 h-5 rounded-md bg-indigo-950 border border-indigo-800 flex items-center justify-center text-[10px] font-bold text-indigo-400">
-              {currentUser.name ? currentUser.name.slice(0, 1).toUpperCase() : 'T'}
-            </div>
-            <span className="max-w-[120px] truncate hidden sm:inline text-slate-300 font-medium">
-              {currentUser.email || currentUser.name}
-            </span>
-            <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border ${
-              currentUser.plan === 'pro' 
-                ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
-                : currentUser.plan === 'elite'
-                ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
-                : 'bg-slate-800 text-slate-400 border-slate-700'
-            }`}>
-              {currentUser.plan}
-            </span>
-          </button>
-
-          {currentWinStreakInfo.streak >= 3 && (
-            <button
-              onClick={() => handleTriggerStreakCelebration()}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-emerald-500/20 border border-amber-500/40 text-amber-300 hover:text-amber-200 transition text-xs font-mono shadow-md shadow-amber-950/30 cursor-pointer"
-              title="Active Win Streak Milestone - Click to celebrate"
-            >
-              <Flame className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-              <span className="font-bold">{currentWinStreakInfo.streak} W Streak</span>
-              <span className="text-[10px] text-emerald-400 hidden sm:inline">(+${currentWinStreakInfo.pnl.toFixed(2)})</span>
-            </button>
-          )}
-
-          <button
-            onClick={() => setIsComplianceOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 border border-indigo-900/60 text-indigo-300 hover:text-indigo-200 hover:bg-slate-850 transition text-xs font-mono"
-            title="App Store & Regulatory Compliance Center"
-          >
-            <Smartphone className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="hidden sm:inline">Store & Legal</span>
-          </button>
-
-          <div className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-right">
-            <span className="text-[9px] uppercase tracking-wider text-slate-500 block font-mono">Master Balance</span>
-            <span className="text-sm font-mono text-emerald-400 font-semibold">${currentBalance.toFixed(2)}</span>
+            {currentWinStreakInfo.streak >= 3 && (
+              <button
+                onClick={() => handleTriggerStreakCelebration()}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-500/20 to-emerald-500/20 border border-amber-500/40 text-amber-300 hover:text-amber-200 transition text-[11px] font-mono shadow-sm cursor-pointer whitespace-nowrap"
+              >
+                <Flame className="w-3 h-3 text-amber-400 animate-pulse" />
+                <span className="font-bold">{currentWinStreakInfo.streak}W Streak</span>
+                <span className="text-[10px] text-emerald-400 hidden xs:inline">(+${currentWinStreakInfo.pnl.toFixed(2)})</span>
+              </button>
+            )}
           </div>
 
-          <button
-            onClick={handleClearData}
-            className="p-2 rounded-xl bg-slate-950 border border-slate-900 hover:border-red-900 text-slate-500 hover:text-red-400 transition"
-            title="Wipe Local Database"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => setIsComplianceOpen(true)}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 border border-indigo-900/50 text-indigo-300 hover:text-indigo-200 transition text-[11px] font-mono whitespace-nowrap"
+              title="Store & Legal Compliance Center"
+            >
+              <Smartphone className="w-3 h-3 text-indigo-400" />
+              <span>Store & Legal</span>
+            </button>
+
+            <button
+              onClick={handleClearData}
+              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-red-900 text-slate-500 hover:text-red-400 transition"
+              title="Reset Database & Account Setup"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -535,12 +595,12 @@ export default function App() {
             format="horizontal"
           />
 
-          {/* Navigation Control bar */}
-          <nav className="bg-slate-900 border border-slate-805/80 p-1 rounded-xl flex items-center justify-between overflow-x-auto gap-1">
-            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
+          {/* Navigation Control bar - Swipeable Horizontal Ribbon */}
+          <nav className="bg-slate-900 border border-slate-800/80 p-1.5 rounded-xl overflow-x-auto scrollbar-none shrink-0">
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none w-max">
               <button
                 onClick={() => setActiveTab('plan')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono font-semibold transition ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-semibold transition whitespace-nowrap shrink-0 ${
                   activeTab === 'plan'
                     ? 'bg-indigo-950 text-indigo-400 border border-indigo-900/60'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-950/40'
@@ -551,7 +611,7 @@ export default function App() {
               
               <button
                 onClick={() => setActiveTab('calendar')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono font-semibold transition ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-semibold transition whitespace-nowrap shrink-0 ${
                   activeTab === 'calendar'
                     ? 'bg-indigo-950 text-indigo-400 border border-indigo-900/60'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-950/40'
@@ -562,7 +622,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab('routine')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono font-semibold transition ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-semibold transition whitespace-nowrap shrink-0 ${
                   activeTab === 'routine'
                     ? 'bg-indigo-950 text-indigo-400 border border-indigo-900/60'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-950/40'
@@ -573,7 +633,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab('tracker')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono font-semibold transition ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-semibold transition whitespace-nowrap shrink-0 ${
                   activeTab === 'tracker'
                     ? 'bg-indigo-950 text-indigo-400 border border-indigo-900/60'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-950/40'
@@ -584,7 +644,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab('review')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono font-semibold transition ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-semibold transition whitespace-nowrap shrink-0 ${
                   activeTab === 'review'
                     ? 'bg-indigo-950 text-indigo-400 border border-indigo-900/60'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-950/40'
@@ -595,7 +655,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab('volatility_layer')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono font-semibold transition ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-semibold transition whitespace-nowrap shrink-0 ${
                   activeTab === 'volatility_layer'
                     ? 'bg-amber-950 text-amber-300 border border-amber-800 shadow'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-950/40'
@@ -606,7 +666,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab('replay_engine')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono font-semibold transition ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-semibold transition whitespace-nowrap shrink-0 ${
                   activeTab === 'replay_engine'
                     ? 'bg-purple-950 text-purple-300 border border-purple-800 shadow'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-950/40'
@@ -617,7 +677,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab('quant_analytics')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono font-semibold transition ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-semibold transition whitespace-nowrap shrink-0 ${
                   activeTab === 'quant_analytics'
                     ? 'bg-emerald-950 text-emerald-300 border border-emerald-800 shadow'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-950/40'
@@ -628,7 +688,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab('gamification')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono font-semibold transition ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-semibold transition whitespace-nowrap shrink-0 ${
                   activeTab === 'gamification'
                     ? 'bg-purple-950 text-purple-300 border border-purple-800 shadow'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-950/40'
@@ -639,7 +699,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab('execution_coach')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono font-semibold transition ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-semibold transition whitespace-nowrap shrink-0 ${
                   activeTab === 'execution_coach'
                     ? 'bg-pink-950 text-pink-300 border border-pink-800 shadow'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-950/40'
@@ -650,7 +710,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab('dna_lab')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono font-semibold transition ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-semibold transition whitespace-nowrap shrink-0 ${
                   activeTab === 'dna_lab'
                     ? 'bg-purple-950 text-purple-300 border border-purple-900/80 shadow'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-950/40'
@@ -661,7 +721,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab('ai_intelligence')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono font-semibold transition ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-semibold transition whitespace-nowrap shrink-0 ${
                   activeTab === 'ai_intelligence'
                     ? 'bg-indigo-950 text-indigo-400 border border-indigo-900/60'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-950/40'
@@ -672,7 +732,7 @@ export default function App() {
 
               <button
                 onClick={() => setActiveTab('premium_guardian')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono font-semibold transition ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-semibold transition whitespace-nowrap shrink-0 ${
                   activeTab === 'premium_guardian'
                     ? 'bg-gradient-to-r from-indigo-950 to-purple-950 text-amber-300 border border-amber-500/50 shadow-md'
                     : 'text-amber-400/90 hover:text-amber-300 hover:bg-slate-950/40'
@@ -781,8 +841,8 @@ export default function App() {
           </div>
         </section>
 
-        {/* Right Voice assistant Sidebar Command deck (4 columns) */}
-        <aside className="lg:col-span-4 flex flex-col justify-between lg:overflow-y-auto">
+        {/* Right Voice assistant Sidebar Command deck (4 columns) - Desktop Only */}
+        <aside className="hidden lg:flex lg:col-span-4 flex-col justify-between lg:overflow-y-auto">
           <VoiceAssistant
             onNavigate={(id) => setActiveTab(id)}
             onAddQuickTrade={handleVoiceAddTrade}
@@ -792,6 +852,66 @@ export default function App() {
         </aside>
 
       </main>
+
+      {/* Mobile Floating Action Button (FAB) for OS Command Decryptor */}
+      <div className="fixed bottom-5 right-5 z-40 lg:hidden">
+        <button
+          onClick={() => setIsMobileCommandDrawerOpen(true)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-indigo-600 via-purple-600 to-emerald-600 text-white shadow-2xl shadow-indigo-950/90 border border-indigo-400/40 hover:scale-105 active:scale-95 transition-all cursor-pointer group"
+          title="Open OS Command Decryptor & Voice Terminal"
+        >
+          <BrainCircuit className="w-4 h-4 text-emerald-300 animate-pulse" />
+          <span className="text-xs font-mono font-bold tracking-tight">OS Command</span>
+          {violations.length > 0 ? (
+            <span className="w-4 h-4 rounded-full bg-rose-500 text-[10px] font-bold flex items-center justify-center text-white">
+              {violations.length}
+            </span>
+          ) : (
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          )}
+        </button>
+      </div>
+
+      {/* Mobile OS Command Slide-up Drawer */}
+      {isMobileCommandDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-slate-950/80 backdrop-blur-sm lg:hidden animate-fade-in">
+          <div 
+            className="fixed inset-0"
+            onClick={() => setIsMobileCommandDrawerOpen(false)}
+          />
+          <div className="relative z-10 bg-slate-900 border-t border-slate-700/80 rounded-t-3xl max-h-[85vh] h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Drawer Top Handle & Header */}
+            <div className="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+              <div className="w-8"></div>
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-1 bg-slate-700 rounded-full mb-2"></div>
+                <div className="flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-mono font-bold text-slate-200">OS Command Decryptor</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsMobileCommandDrawerOpen(false)}
+                className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {/* Drawer Body with VoiceAssistant */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <VoiceAssistant
+                onNavigate={(id) => {
+                  setActiveTab(id);
+                  setIsMobileCommandDrawerOpen(false);
+                }}
+                onAddQuickTrade={handleVoiceAddTrade}
+                trades={trades}
+                violationsCount={violations.length}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Clean compact screen boundary guidelines warning bar & compliance trigger */}
       <footer className="border-t border-slate-900/80 bg-slate-950 px-6 py-2.5 flex items-center justify-between text-[11px] text-slate-500 shrink-0 font-mono">
@@ -844,6 +964,14 @@ export default function App() {
         currentUser={currentUser}
         onUpdatePlan={handleUpdatePlan}
         onUpdatePublisherId={handleUpdatePublisherId}
+      />
+
+      {/* Zero-State Initial Setup & Account Parameters Modal */}
+      <QuickStartModal
+        isOpen={isQuickStartOpen}
+        onClose={() => setIsQuickStartOpen(false)}
+        onSaveConfig={handleSaveAccountSetup}
+        currentLimits={riskLimits}
       />
 
     </div>

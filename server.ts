@@ -3,6 +3,7 @@ import path from "path";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import { createServer as createViteServer } from "vite";
+import Stripe from "stripe";
 
 dotenv.config();
 
@@ -32,6 +33,19 @@ const getAI = (): GoogleGenAI => {
   return aiClient;
 };
 
+// Lazy-initialized Stripe client instance
+let stripeClient: Stripe | null = null;
+const getStripe = (): Stripe => {
+  if (!stripeClient) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) {
+      throw new Error("STRIPE_SECRET_KEY environment variable is not set. Please configure it in Settings > Secrets.");
+    }
+    stripeClient = new Stripe(key);
+  }
+  return stripeClient;
+};
+
 // In-memory cache to prevent quota exhaustion and rate limiting
 interface CacheEntry {
   data: { text: string; sources: any[]; isFallback?: boolean };
@@ -58,6 +72,106 @@ const checkApiKey = () => {
 };
 
 /**
+ * Stripe Payment & Subscription Routes
+ */
+app.get("/api/stripe/config", (req, res) => {
+  res.json({
+    isConfigured: Boolean(process.env.STRIPE_SECRET_KEY),
+    publishableKey: process.env.VITE_STRIPE_PUBLISHABLE_KEY || ""
+  });
+});
+
+app.post("/api/stripe/create-checkout-session", async (req, res) => {
+  try {
+    const { plan, billingCycle, email } = req.body;
+    if (!plan || (plan !== 'pro' && plan !== 'elite')) {
+      return res.status(400).json({ error: "Invalid plan selected." });
+    }
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.json({
+        configured: false,
+        message: "Stripe Secret Key is not configured yet. Add STRIPE_SECRET_KEY in Settings > Secrets to accept live credit card payments. Demo subscription mode is currently active.",
+        testMode: true,
+        plan,
+        billingCycle: billingCycle || 'monthly'
+      });
+    }
+
+    const stripe = getStripe();
+    const appUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+    const isAnnual = billingCycle === 'annual';
+    const amountInCents = plan === 'elite'
+      ? (isAnnual ? 79000 : 7900)
+      : (isAnnual ? 29000 : 2900);
+
+    const planName = plan === 'elite' ? 'NeuroTactix Elite Institutional Terminal' : 'NeuroTactix Pro Quantitative Terminal';
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'subscription',
+      customer_email: email || undefined,
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: planName,
+              description: `Access to ${planName} with zero ads, Monte Carlo Ruin Modeling, and real-time AI cognitive risk coaching.`,
+            },
+            unit_amount: amountInCents,
+            recurring: {
+              interval: isAnnual ? 'year' : 'month',
+            },
+          },
+          quantity: 1,
+        },
+      ],
+      success_url: `${appUrl}/?session_id={CHECKOUT_SESSION_ID}&upgraded_plan=${plan}`,
+      cancel_url: `${appUrl}/?checkout_cancelled=true`,
+      metadata: {
+        plan,
+        billingCycle: billingCycle || 'monthly'
+      }
+    });
+
+    res.json({
+      configured: true,
+      url: session.url,
+      sessionId: session.id
+    });
+  } catch (err: any) {
+    console.error("[Stripe] Checkout error:", err);
+    res.status(500).json({
+      error: "Failed to create Stripe checkout session",
+      message: err?.message || "Unknown Stripe error"
+    });
+  }
+});
+
+app.post("/api/stripe/webhook", async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return res.status(200).json({ received: true, note: "Stripe key not configured" });
+  }
+
+  try {
+    let event: any = req.body;
+    if (webhookSecret && sig) {
+      const stripe = getStripe();
+      event = stripe.webhooks.constructEvent(req.body, sig as string, webhookSecret);
+    }
+    console.log(`[Stripe Webhook] Event received: ${event.type}`);
+    res.json({ received: true });
+  } catch (err: any) {
+    console.error(`[Stripe Webhook Error]:`, err.message);
+    res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+});
+
+/**
  * Endpoint: /api/gemini/chat
  * Handles conversational queries from the AI Trade Assistant/Voice Assistant,
  * utilizing real-time Google Search grounding to retrieve up-to-date market information.
@@ -79,14 +193,14 @@ app.post("/api/gemini/chat", async (req, res) => {
 
     // Build standard prompt with trading-safety boundaries
     const systemInstruction = 
-      "You are the Core Intelligence and AI Trade Coach of an Executive Trading Operating System for Binary Options.\n" +
+      "You are the Core Intelligence and AI Trade Coach of an Executive Quantitative Execution & Cognitive Risk Terminal for Futures, Equities, and Forex Derivatives.\n" +
       "Your objective is to help traders cultivate supreme psychological discipline, understand strategies, and analyze market news.\n" +
       "RULES OF ENGAGEMENT:\n" +
-      "1. You NEVER provide explicit buy/sell buy-in signals or precise price prediction advice (e.g. 'EUR/USD will go up at 14:00, buy now'). If the user asks for a direct prediction, explain that providing direct buy/sell trade predictions goes against system safety protocols, and guide them to check their entry checklist and trend confirmation rules instead.\n" +
+      "1. You NEVER provide explicit buy/sell signals or precise price prediction advice (e.g. 'EUR/USD will go up at 14:00, buy now'). If the user asks for a direct prediction, explain that providing direct buy/sell trade predictions goes against system safety protocols, and guide them to check their entry checklist and trend confirmation rules instead.\n" +
       "2. You MUST use Google Search grounding to obtain up-to-date financial news, economic calendar events, and real-time asset market sentiments when asked about current events.\n" +
       "3. Structure your responses professionally with clean typography and bullet points, utilizing markdown.\n" +
       "4. Be authoritative yet calm, promoting disciplined, structured, risk-aware trading (such as keeping position sizes strictly at 1-2% of capital, avoiding martingale doubling, and walking away after consecutive losses).\n" +
-      "5. TRADING ADVICE CONSTRAINT: You can give trading advice ONLY if it is highly accurate and directly accounts for recent economic news breaks and upcoming macroeconomic calendar data. Before formulating any trading advice, you must check for recent high-impact events (e.g., central bank rate changes, CPI, retail sales, employment metrics, GDP). If a major news break occurred recently or is scheduled within the hour, warn the user clearly about the active news break, explain the specific currency pair volatility, and advise them to pause or reduce contract sizes. If no recent news breaks exist, explicitly specify that there are no active news-break drivers, and advise technical discipline.";
+      "5. TRADING ADVICE CONSTRAINT: You can give trading advice ONLY if it is highly accurate and directly accounts for recent economic news breaks and upcoming macroeconomic calendar data. Before formulating any trading advice, you must check for recent high-impact events (e.g., central bank rate changes, CPI, retail sales, employment metrics, GDP). If a major news break occurred recently or is scheduled within the hour, warn the user clearly about the active news break, explain the specific currency pair volatility, and advise them to pause or reduce position sizes. If no recent news breaks exist, explicitly specify that there are no active news-break drivers, and advise technical discipline.";
 
     const ai = getAI();
     const response = await ai.models.generateContent({
@@ -123,24 +237,24 @@ app.post("/api/gemini/chat", async (req, res) => {
     if (query.includes("tilt") || query.includes("discipline") || query.includes("emotion") || query.includes("lose") || query.includes("loss")) {
       text = "### 🧠 AI TRADE COACH: DISCIPLINE & EMOTIONAL RECOVERY (STANDBY FEED)\n\n" +
              "It looks like you are managing trading pressure or experiencing psychological friction. Let's recalibrate immediately:\n\n" +
-             "1. **Execute the 'Walk Away' Rule**: If you have suffered consecutive losses, your prefrontal cortex is flooded with cortisol. You cannot make logical decisions in this state. Close your broker platform immediately.\n" +
-             "2. **Acknowledge the Outcome**: In binary options, every contract has a discrete outcome. Accept the loss as the predefined cost of business. Do not double down or attempt 'revenge trading'.\n" +
-             "3. **Examine Sizing Limits**: Your position size must never exceed 1-2% of your overall capital. Doubling trade size (Martingale) after a loss is mathematically guaranteed to blow your account eventually.\n\n" +
+             "1. **Execute the 'Walk Away' Rule**: If you have suffered consecutive losses, your prefrontal cortex is flooded with cortisol. You cannot make logical decisions in this state. Close your execution platform immediately.\n" +
+             "2. **Acknowledge the Outcome**: In institutional derivatives trading, every position has defined risk parameters. Accept the loss as the predefined cost of business. Do not double down or attempt 'revenge trading'.\n" +
+             "3. **Examine Sizing Limits**: Your position size must never exceed 1-2% of your overall capital. Doubling position size (Martingale) after a loss is mathematically guaranteed to blow your account eventually.\n\n" +
              "*\"A master trader accepts risk, protects capital, and honors the plan over the impulse.\"* Pause for 15 minutes, hydrate, and return only when your pulse is calm.";
     } else if (query.includes("support") || query.includes("resistance") || query.includes("strategy") || query.includes("pattern") || query.includes("retest")) {
       text = "### 📈 AI TRADE COACH: STRATEGY & LEVEL ANALYSIS (STANDBY FEED)\n\n" +
-             "To trade strategies like the **5-Minute Retest** or **Trend Continuation** safely, observe these core structural guidelines:\n\n" +
+             "To trade setups like the **Trend Continuation** or **Break-and-Retest** safely, observe these core structural guidelines:\n\n" +
              "* **Verify Support / Resistance**: Ensure you are not buying directly into a key major resistance level or selling directly into a key major support level on the higher timeframe (15-min or 1-hour).\n" +
-             "* **Wait for the Retest Candle**: In a breakout scenario, do not chase the breakout candle. Wait for the price to return to the broken level (the retest), look for a rejection wick, and enter on the next candle's open.\n" +
-             "* **Check Moving Averages**: Confirm the trend direction with the 20 EMA and 50 EMA. Only take BUY call contracts if the price is holding above the EMAs, and SELL put contracts if the price is below.\n\n" +
+             "* **Wait for the Retest Candle**: In a breakout scenario, do not chase the breakout candle. Wait for the price to return to the broken level (the retest), look for a rejection wick, and enter on confirmed structural hold.\n" +
+             "* **Check Moving Averages**: Confirm the trend direction with the 20 EMA and 50 EMA. Only take Long executions if price is holding above the EMAs, and Short executions if price is below.\n\n" +
              "Maintain absolute rules. Consistency of execution is more valuable than any single trade result.";
     } else {
       text = "### 🌐 AI TRADE COACH: OPERATIONAL BRIEF (STANDBY FEED)\n\n" +
              `Received request: "${prompt}"\n\n` +
              "Here is your executive operational briefing for today:\n\n" +
              "* **Risk Control**: Maintain strict risk limits. No single trade should exceed 1-2% of account balance. No exceptions.\n" +
-             "* **News Watch**: High volatility is active in several currency pairs today. Verify news release schedules before placing contracts.\n" +
-             "* **Daily Strategy Check**: Keep your win-rate balanced. If you reach your daily profit target, stop. If you hit your daily max loss limit, stop immediately.\n\n" +
+             "* **News Watch**: High volatility is active in several markets today. Verify news release schedules before placing market orders.\n" +
+             "* **Daily Execution Check**: Keep your win-rate balanced. If you reach your daily profit target, stop. If you hit your daily max loss limit, stop immediately.\n\n" +
              "How else can I assist with your trading plan or strategy discipline today?";
     }
 
@@ -175,14 +289,14 @@ app.post("/api/gemini/market-news", async (req, res) => {
   try {
     checkApiKey();
     const filterText = currencyFilter ? ` (specifically looking at ${currencyFilter})` : "";
-    const prompt = `Find the highest impact macroeconomic economic calendar news releases and financial events for today ${new Date().toISOString().split('T')[0]}${filterText} that will significantly affect major binary options currency pairs (EUR/USD, GBP/USD, USD/JPY, AUD/USD) and Gold. Detail the event name, the affected currencies, typical expected volatility, and concrete risk warnings (e.g., whether to pause trading 15 minutes before/after the release). Format with clear sections.`;
+    const prompt = `Find the highest impact macroeconomic economic calendar news releases and financial events for today ${new Date().toISOString().split('T')[0]}${filterText} that will significantly affect major derivatives, equities, and currency markets (NQ/ES Futures, EUR/USD, GBP/USD, USD/JPY, AUD/USD) and Gold. Detail the event name, the affected assets, typical expected volatility, and concrete risk warnings (e.g., whether to pause trading 15 minutes before/after the release). Format with clear sections.`;
 
     const ai = getAI();
     const response = await ai.models.generateContent({
       model: "gemini-3.8-flash",
       contents: prompt,
       config: {
-        systemInstruction: "You are an expert financial analyst. Deliver an executive summary of high-impact news for binary options traders. Always provide accurate dates and times from today's search results.",
+        systemInstruction: "You are an expert financial analyst. Deliver an executive summary of high-impact news for multi-asset derivatives and forex traders. Always provide accurate dates and times from today's search results.",
         tools: [{ googleSearch: {} }],
       }
     });
@@ -209,8 +323,8 @@ The integrated news gateway is operating in secure standby mode. The system is s
 
 1. **US Core Retail Sales & CPI Releases (USD)**
    * **Impact Rating**: 🔴 HIGH VOLATILITY
-   * **Affected Pairs**: EUR/USD, GBP/USD, USD/JPY, Gold (XAU/USD)
-   * **Action Warning**: Pause all USD binary contracts 15 minutes before the release and do not resume until 20 minutes after. High probability of unexpected price gaps and contract slippage.
+   * **Affected Pairs**: NQ/ES Futures, EUR/USD, GBP/USD, USD/JPY, Gold (XAU/USD)
+   * **Action Warning**: Pause all USD market executions 15 minutes before the release and do not resume until 20 minutes after. High probability of unexpected price gaps and execution slippage.
 
 2. **Eurozone CPI Flash Estimate & ECB Policy Comments (EUR)**
    * **Impact Rating**: 🟡 MEDIUM-HIGH VOLATILITY
@@ -225,10 +339,10 @@ The integrated news gateway is operating in secure standby mode. The system is s
 4. **BoJ Monetary Policy Pressures (JPY)**
    * **Impact Rating**: 🟡 MEDIUM VOLATILITY
    * **Affected Pairs**: USD/JPY, EUR/JPY
-   * **Action Warning**: Spontaneous currency intervention warnings are active. Keep binary options contract expirations short (under 5 minutes) to avoid being caught in multi-figure spikes.
+   * **Action Warning**: Spontaneous currency intervention warnings are active. Keep risk limits tight and avoid holding through major rate announcements.
 
 ---
-*Operating under standby macroeconomic feed. Please cross-verify exact minutes with Investing.com or ForexFactory before risking real capital.*`;
+*Operating under standby macroeconomic feed. Please cross-verify exact minutes with economic calendars before risking real capital.*`;
 
     // Apply simple filtering if requested
     if (filterStr) {
@@ -260,7 +374,7 @@ app.post("/api/gemini/sentiment", async (req, res) => {
 
   try {
     checkApiKey();
-    const prompt = `Perform a comprehensive financial market sentiment and bias scan for key binary options assets today: EUR/USD, GBP/USD, USD/JPY, and Gold (XAU/USD). Use current real-time market search reports to assess if the prevailing daily trend/sentiment is Bullish, Bearish, or Neutral. Detail the technical consensus, major moving factors, and key support/resistance zones to watch. Format as a clean dashboard summary.`;
+    const prompt = `Perform a comprehensive financial market sentiment and bias scan for key trading assets today: EUR/USD, GBP/USD, USD/JPY, NQ/ES Futures, and Gold (XAU/USD). Use current real-time market search reports to assess if the prevailing daily trend/sentiment is Bullish, Bearish, or Neutral. Detail the technical consensus, major moving factors, and key support/resistance zones to watch. Format as a clean dashboard summary.`;
 
     const ai = getAI();
     const response = await ai.models.generateContent({
@@ -288,36 +402,36 @@ app.post("/api/gemini/sentiment", async (req, res) => {
     console.log(`[Gemini API] /api/gemini/sentiment notice (${isQuota ? 'Quota Limit' : 'Offline'}): Serving standby sentiment metrics.`);
 
     // Serve a premium real-time calculated standby sentiment dashboard
-    const fallbackText = `### 📈 [STANDBY TREND ENGINE] CURRENCY BIAS & SENTIMENT INDEX
-The system has generated a technical trend consensus matrix for major pairs based on moving averages (20/50/200 EMA) and recent central bank positioning:
+    const fallbackText = `### 📈 [STANDBY TREND ENGINE] ASSET BIAS & SENTIMENT INDEX
+The system has generated a technical trend consensus matrix for major assets based on moving averages (20/50/200 EMA) and recent central bank positioning:
 
 #### 1. EUR/USD
-* **Consensus Bias**: 🟢 Bullish (62% Buy / 38% Sell)
+* **Consensus Bias**: 🟢 Bullish (62% Long / 38% Short)
 * **Trend Driver**: Retesting the support zone after positive macroeconomic statements from the European Central Bank.
 * **Support Levels**: 1.0820, 1.0795
 * **Resistance Levels**: 1.0885, 1.0910
 * **Tactical Advice**: Look for long positions near the 5-minute EMA or VWAP. Avoid shorting unless support at 1.0820 breaks decisively on the 15-minute timeframe.
 
 #### 2. GBP/USD
-* **Consensus Bias**: 🟢 Strong Bullish (72% Buy / 28% Sell)
+* **Consensus Bias**: 🟢 Strong Bullish (72% Long / 28% Short)
 * **Trend Driver**: Steady sterling demand fueled by steady UK rate outlook relative to federal reserve easing expectations.
 * **Support Levels**: 1.2640, 1.2590
 * **Resistance Levels**: 1.2725, 1.2760
 * **Tactical Advice**: Bullish continuation is primary. Watch for buy-wick confirmations on pullbacks to the 15-minute 20 EMA.
 
 #### 3. USD/JPY
-* **Consensus Bias**: 🔴 Bearish (30% Buy / 70% Sell)
+* **Consensus Bias**: 🔴 Bearish (30% Long / 70% Short)
 * **Trend Driver**: Market highly cautious of potential Bank of Japan spot interventions. Speculative long positions are unwinding.
 * **Support Levels**: 154.10, 153.30
 * **Resistance Levels**: 155.65, 156.20
-* **Tactical Advice**: Keep contract expirations very short (e.g. 2 to 3 minutes) if trading support rejection. Spontaneous sudden downward intervention spikes are a risk.
+* **Tactical Advice**: Watch for structural support rejection before initiating longs. Spontaneous sudden downward intervention spikes are a risk.
 
 #### 4. Gold (XAU/USD)
-* **Consensus Bias**: 🟢 Bullish (68% Buy / 32% Sell)
+* **Consensus Bias**: 🟢 Bullish (68% Long / 32% Short)
 * **Trend Driver**: Safe-haven demand and soft yields supporting metal breakout patterns.
 * **Support Levels**: $2320, $2305
 * **Resistance Levels**: $2360, $2385
-* **Tactical Advice**: High tick speed and momentum. Set expirations to 10-15 minutes rather than 60 seconds to absorb intra-minute volatility noise near major key zones.`;
+* **Tactical Advice**: High tick speed and momentum. Use wider stop structures and wait for 15-minute candle closures to absorb intra-minute volatility noise near major key zones.`;
 
     const payload = {
       text: fallbackText,
@@ -357,10 +471,10 @@ app.post("/api/gemini/psychological-diagnosis", async (req, res) => {
       `- **${s.name}**: Disciplined WR: ${s.disciplinedWinRate}% (${s.disciplinedTrades} trades) vs Emotional WR: ${s.emotionalWinRate}% (${s.emotionalTrades} trades, Emotional PnL: $${s.emotionalPnl})`
     ).join("\n");
 
-    const prompt = `Perform a comprehensive Trading Psychology & Sentiment Analysis Diagnosis for a binary options trader based on the following verified performance metrics:
+    const prompt = `Perform a comprehensive Trading Psychology & Sentiment Analysis Diagnosis for an institutional trader based on the following verified performance metrics:
 
 ### TRADER PERFORMANCE & EMOTIONAL CORRELATION DATA:
-- **Total Contracts Executed**: ${totalTrades}
+- **Total Trades Executed**: ${totalTrades}
 - **Disciplined Execution Win Rate**: ${disciplinedWinRate}% (${disciplinedTrades} disciplined trades, Net P&L: $${disciplinedPnl})
 - **Emotional / Compromised Win Rate**: ${emotionalWinRate}% (${emotionalTrades} emotional trades, Net P&L: $${emotionalPnl})
 - **Win Rate Edge Degradation**: ${Math.max(0, (disciplinedWinRate || 0) - (emotionalWinRate || 0))}% drop when trading emotionally
@@ -380,7 +494,7 @@ ${strategySummary || 'No setup breakdown available.'}
 Format with crisp, executive markdown, clean bullet points, and authoritative, calm coaching tone.`;
 
     const systemInstruction = 
-      "You are the Master Trading Psychologist and AI Trade Coach of an Executive Binary Options Trading Operating System.\n" +
+      "You are the Master Trading Psychologist and AI Trade Coach of an Executive Quantitative Execution & Cognitive Risk Terminal.\n" +
       "You deliver high-impact, empathetic, yet uncompromising psychological analysis. You analyze cold hard data to expose emotional cognitive traps.\n" +
       "Never give direct buy/sell predictions. Focus entirely on mathematical edge, emotional regulation, risk sizing, and behavioral discipline.";
 
@@ -405,8 +519,8 @@ Format with crisp, executive markdown, clean bullet points, and authoritative, c
 
 #### 1. Executive Psychological Sentiment Synthesis
 Your data reveals a profound correlation between your emotional state and trade outcome viability:
-* **Disciplined Execution**: **${disciplinedWinRate || 0}% Win Rate** across ${disciplinedTrades || 0} contracts (Net P&L: **+$${disciplinedPnl || 0}**). When you follow your rules, your system possesses a verified mathematical edge.
-* **Emotional Compromise**: **${emotionalWinRate || 0}% Win Rate** across ${emotionalTrades || 0} contracts (Net P&L: **$${emotionalPnl || 0}**).
+* **Disciplined Execution**: **${disciplinedWinRate || 0}% Win Rate** across ${disciplinedTrades || 0} trades (Net P&L: **+$${disciplinedPnl || 0}**). When you follow your rules, your system possesses a verified mathematical edge.
+* **Emotional Compromise**: **${emotionalWinRate || 0}% Win Rate** across ${emotionalTrades || 0} trades (Net P&L: **$${emotionalPnl || 0}**).
 * **Edge Degradation**: Entering trades under emotional duress inflicts a **-${edgeDiff}% collapse in your statistical edge**.
 
 #### 2. Cognitive Distortion & Trigger Diagnosis
@@ -419,8 +533,8 @@ Your data reveals a profound correlation between your emotional state and trade 
 
 #### 4. Targeted 3-Step Behavioral Prescription
 1. **Mandatory 5-Minute Terminal Lockout**: After any loss, immediately step away from the keyboard for 5 full minutes. Break the cortisol feedback loop before viewing the charts again.
-2. **Pre-Trade Checklist Gate**: You are forbidden from clicking CALL or PUT until all 4 verification checkboxes on your Daily Plan are checked.
-3. **Hard Contract Size Cap**: Keep trade sizes strictly locked at 1.0%–1.5% of master capital. Never double position size to compensate for a prior drawdown.
+2. **Pre-Trade Checklist Gate**: You are forbidden from executing Long or Short orders until all verification checkboxes on your Daily Plan are checked.
+3. **Hard Position Size Cap**: Keep trade risk strictly locked at 1.0%–1.5% of master capital. Never double position size to compensate for a prior drawdown.
 
 *\"Mastery is not predicting what the market will do next; mastery is controlling what YOU do next.\"*`;
 

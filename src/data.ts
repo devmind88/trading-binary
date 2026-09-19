@@ -41,7 +41,7 @@ export const approvedStrategies: StrategyDefinition[] = [
     marketConditionsWorst: 'Parabolic, fast-moving news-driven trends where previous containment levels are ignored.',
     behavioralMistakes: [
       'Entering too early without waiting for a clear exhaustion candlestick (pin bar, engulfing) to establish.',
-      'Pre-empting the level rather than letting the structure manifest.'
+      'Preempting the level rather than letting the structure manifest.'
     ],
     refinementSuggestions: [
       'Incorporate an oscillator like RSI or Stochastic to verify overbought/oversold exhaustion at the structural level.',
@@ -74,7 +74,7 @@ export const approvedStrategies: StrategyDefinition[] = [
   {
     id: 'candlestick_patterns',
     name: 'High-Probability Candlestick Patterns',
-    description: 'Pure price action trading focused on specific high-conviction formations such as pin bars (peezers), engulfing candles, inside-bar breakouts, or morning/evening star configurations.',
+    description: 'Pure price action trading focused on specific high-conviction formations such as pin bars (tweezers), engulfing candles, inside-bar breakouts, or morning/evening star configurations.',
     strengths: [
       'Extremely visual, highly objective, and adaptable across all pairs.',
       'Allows rapid mental calculation and alignment.'
@@ -83,7 +83,7 @@ export const approvedStrategies: StrategyDefinition[] = [
       'Patterns occurring in the middle of nowhere hold no statistical edge.',
       'Prone to subjective interpretation if the trader is desperate for an entry.'
     ],
-    marketConditionsBest: 'Any market with clean liquidity and candles that respects pure open-cloze-high-low levels, avoiding highly volatile index spikes.',
+    marketConditionsBest: 'Any market with clean liquidity and candles that respect pure open-close-high-low levels, avoiding highly volatile index spikes.',
     marketConditionsWorst: 'Doji-heavy, low-volume, or highly manipulated pairs where wicks are purely algorithmic noise.',
     behavioralMistakes: [
       'Trading patterns in isolation without confirming they are situated at a key structural level (horizontal or trendline).',
@@ -97,32 +97,32 @@ export const approvedStrategies: StrategyDefinition[] = [
 ];
 
 export const defaultEntryChecklist: ChecklistItem[] = [
-  { id: 'ec1', text: 'Trend direction confirmed on multiple timeframes', checked: false },
-  { id: 'ec2', text: 'Key historical level (S/R, supply/demand, or Fibonacci) identified', checked: false },
-  { id: 'ec3', text: 'Approved candlestick entry signal present', checked: false },
-  { id: 'ec4', text: 'No high-impact macroeconomic news in next 30 minutes', checked: false },
-  { id: 'ec5', text: 'Mental check: I am calm, breathing steadily, and entirely focused', checked: false }
+  { id: 'ec1', text: 'Trend confirmation across multi-timeframe structures', checked: false },
+  { id: 'ec2', text: 'Key level validation (Order block, liquidity pool, support/resistance)', checked: false },
+  { id: 'ec3', text: 'Approved execution trigger present', checked: false },
+  { id: 'ec4', text: 'High-impact macro news clearance (30m buffer)', checked: false },
+  { id: 'ec5', text: 'Cognitive state confirmation (Calm, structured, non-reactive)', checked: false }
 ];
 
 export const defaultBeforeRoutine: ChecklistItem[] = [
   { id: 'br1', text: 'Review yesterday’s trades & identify any rule/strategy slip-ups', checked: false },
-  { id: 'br2', text: 'Check economic calendar for high-impact USD, EUR, or GBP releases', checked: false },
-  { id: 'br3', text: 'Identify and draw major structural levels on target currency pairs', checked: false },
-  { id: 'br4', text: 'Define maximum daily risk budget (5% limit)', checked: false },
+  { id: 'br2', text: 'Check economic calendar for high-impact releases (CPI, Fed/FOMC, NFP)', checked: false },
+  { id: 'br3', text: 'Identify and mark major structural levels on target markets (Futures/Forex/Equities)', checked: false },
+  { id: 'br4', text: 'Define maximum daily risk budget (3-5% hard cap)', checked: false },
   { id: 'br5', text: 'Set standard position sizing (1-2% of current account balance)', checked: false },
-  { id: 'br6', text: 'Verify hardware, internet connection, and confirm normal calm breathing', checked: false }
+  { id: 'br6', text: 'Verify hardware, internet connection, and confirm calm, structured breathing', checked: false }
 ];
 
 export const defaultDuringRoutine: ChecklistItem[] = [
-  { id: 'dr1', text: 'Enforce entry checklist strictly. No checks skipped, no trades made.', checked: false },
-  { id: 'dr2', text: 'Log every single trade immediately with tags and comments.', checked: false },
-  { id: 'dr3', text: 'Stop trading immediately if 3 consecutive losses occur.', checked: false },
+  { id: 'dr1', text: 'Enforce entry checklist strictly. No checks skipped, no trades executed.', checked: false },
+  { id: 'dr2', text: 'Log every trade execution immediately with strategy tag and rationale.', checked: false },
+  { id: 'dr3', text: 'Stop trading immediately if 3 consecutive losses occur (Lockout rule).', checked: false },
   { id: 'dr4', text: 'Take a stand-up or stretch break after every 3 trades to clear the mind.', checked: false }
 ];
 
 export const defaultAfterRoutine: ChecklistItem[] = [
   { id: 'ar1', text: 'Fill out PnL Calendar with final wins, losses, and net balance.', checked: false },
-  { id: 'ar2', text: 'Review screenshots of today’s entries to verify matching structure.', checked: false },
+  { id: 'ar2', text: 'Review charts of today’s entries to verify matching structural edge.', checked: false },
   { id: 'ar3', text: 'Identify any emotional impulses or rushing mistakes.', checked: false },
   { id: 'ar4', text: 'Document improvements in the strategy performance tracker notes.', checked: false }
 ];
@@ -142,119 +142,143 @@ export const sampleTrades: Trade[] = [
     date: '2026-05-25',
     time: '08:15',
     strategyId: 'trend_continuation',
-    type: 'CALL',
-    amount: 20,
+    type: 'LONG',
+    amount: 100,
     result: 'WIN',
-    payoutRate: 85,
-    pnl: 17,
+    payoutRate: 150,
+    targetRr: '1:1.5',
+    holdingHorizon: '15m',
+    market: 'NQ Futures',
+    pnl: 150,
     session: 'Morning',
     isEmotional: false,
     positionConsistencyChecked: true,
-    notes: 'Clean entry off 20 EMA pullback in EUR/USD strong uptrend. Followed checklist.'
+    notes: 'Clean entry off 20 EMA pullback in NQ Futures strong uptrend. Followed checklist.'
   },
   {
     id: 't2',
     date: '2026-05-25',
     time: '08:45',
     strategyId: 'trend_continuation',
-    type: 'CALL',
-    amount: 20,
+    type: 'LONG',
+    amount: 100,
     result: 'WIN',
-    payoutRate: 85,
-    pnl: 17,
+    payoutRate: 200,
+    targetRr: '1:2',
+    holdingHorizon: '15m',
+    market: 'ES Futures',
+    pnl: 200,
     session: 'Morning',
     isEmotional: false,
     positionConsistencyChecked: true,
-    notes: 'Second pullback successful. Solid momentum.'
+    notes: 'Second pullback successful at key liquidity pool. Solid momentum.'
   },
   {
     id: 't3',
     date: '2026-05-26',
     time: '12:30',
     strategyId: 'reversal_zones',
-    type: 'PUT',
-    amount: 20,
+    type: 'SHORT',
+    amount: 100,
     result: 'LOSS',
-    pnl: -20,
-    payoutRate: 82,
+    pnl: -100,
+    payoutRate: 150,
+    targetRr: '1:1.5',
+    holdingHorizon: '30m',
+    market: 'EUR/USD',
     session: 'Midday',
     isEmotional: false,
     positionConsistencyChecked: true,
-    notes: 'GBP/USD major resistance breakout. Traded rejection but candle broke and closed above S/R.'
+    notes: 'EUR/USD major resistance breakout. Traded rejection but price broke and held above order block.'
   },
   {
     id: 't4',
     date: '2026-05-26',
     time: '13:02',
     strategyId: 'reversal_zones',
-    type: 'PUT',
-    amount: 40, // Inconsistent larger size!
+    type: 'SHORT',
+    amount: 250, // Inconsistent larger size!
     result: 'LOSS',
-    pnl: -40,
-    payoutRate: 82,
+    pnl: -250,
+    payoutRate: 150,
+    targetRr: '1:1.5',
+    holdingHorizon: '15m',
+    market: 'EUR/USD',
     session: 'Midday',
     isEmotional: true, // Revenge behavior detected
     positionConsistencyChecked: false,
-    notes: 'Revenge trade. Doubled trade size attempting to win back the previous reversal loss. Major mistake.'
+    notes: 'Revenge trade. Increased position size attempting to recoup previous loss. Major rule violation.'
   },
   {
     id: 't5',
     date: '2026-05-27',
     time: '09:40',
     strategyId: 'break_and_retest',
-    type: 'CALL',
-    amount: 15,
+    type: 'LONG',
+    amount: 100,
     result: 'WIN',
-    payoutRate: 85,
-    pnl: 12.75,
+    payoutRate: 180,
+    targetRr: '1:1.8',
+    holdingHorizon: '1H',
+    market: 'Gold (XAU/USD)',
+    pnl: 180,
     session: 'Morning',
     isEmotional: false,
     positionConsistencyChecked: true,
-    notes: 'Beautiful retest of broken high range on USD/JPY. Waited patiently for the wick rejection.'
+    notes: 'Structured retest of broken high range on Gold. Waited patiently for the wick rejection.'
   },
   {
     id: 't6',
     date: '2026-05-28',
     time: '15:10',
     strategyId: 'candlestick_patterns',
-    type: 'PUT',
-    amount: 15,
+    type: 'SHORT',
+    amount: 100,
     result: 'WIN',
-    payoutRate: 80,
-    pnl: 12,
+    payoutRate: 160,
+    targetRr: '1:1.6',
+    holdingHorizon: '15m',
+    market: 'SPY',
+    pnl: 160,
     session: 'Midday',
     isEmotional: false,
     positionConsistencyChecked: true,
-    notes: 'Stellar pin-bar rejection engulfing at historical daily supply level on AUD/USD.'
+    notes: 'Pin-bar rejection engulfing at historical supply level on SPY.'
   },
   {
     id: 't7',
     date: '2026-05-29',
     time: '19:45',
     strategyId: 'trend_continuation',
-    type: 'CALL',
-    amount: 15,
+    type: 'LONG',
+    amount: 100,
     result: 'LOSS',
-    pnl: -15,
-    payoutRate: 80,
+    pnl: -100,
+    payoutRate: 150,
+    targetRr: '1:1.5',
+    holdingHorizon: '1H',
+    market: 'BTC/USD',
     session: 'Evening',
     isEmotional: false,
     positionConsistencyChecked: true,
-    notes: 'Evening volume was very thin, trend died and fluctuated heavily. Lesson: avoid trading late evening.'
+    notes: 'Evening volume was thin, trend died and fluctuated heavily. Lesson: avoid trading late evening.'
   },
   {
     id: 't8',
     date: '2026-05-29',
     time: '20:02',
     strategyId: 'reversal_zones',
-    type: 'CALL',
-    amount: 15,
+    type: 'LONG',
+    amount: 100,
     result: 'WIN',
-    payoutRate: 80,
-    pnl: 12,
+    payoutRate: 150,
+    targetRr: '1:1.5',
+    holdingHorizon: '30m',
+    market: 'USD/JPY',
+    pnl: 150,
     session: 'Evening',
     isEmotional: false,
     positionConsistencyChecked: true,
-    notes: 'Final rebound off daily pivot. Retiring with focus.'
+    notes: 'Rebound off daily pivot support. Retiring with focus.'
   }
 ];

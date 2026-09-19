@@ -40,7 +40,7 @@ export const PremiumGuardian: React.FC<PremiumGuardianProps> = ({
   const simulationResults = useMemo(() => {
     const pWin = (customWinRate || empiricalStats.winRate) / 100;
     const stakeFrac = (customStakePercent || 1.5) / 100;
-    const payout = 0.82; // standard 82% binary option payout
+    const payout = 0.82; // standard 82% derivative contract payout
     const startBal = riskLimits.startingBalance || 1000;
 
     let ruinedCount = 0;

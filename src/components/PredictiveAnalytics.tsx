@@ -31,7 +31,7 @@ interface PredictiveAnalyticsProps {
 export const PredictiveAnalytics: React.FC<PredictiveAnalyticsProps> = ({ trades }) => {
   // Simulator & Forecast Setup State
   const [selectedStrategy, setSelectedStrategy] = useState<StrategyId>('trend_continuation');
-  const [selectedDirection, setSelectedDirection] = useState<'CALL' | 'PUT'>('CALL');
+  const [selectedDirection, setSelectedDirection] = useState<'LONG' | 'SHORT'>('LONG');
   const [selectedHour, setSelectedHour] = useState<number>(() => {
     const currentUTC = new Date().getUTCHours();
     return currentUTC;
@@ -93,9 +93,9 @@ export const PredictiveAnalytics: React.FC<PredictiveAnalyticsProps> = ({ trades
       const wins = sTrades.filter(t => t.result === 'WIN').length;
       const winRate = total > 0 ? Math.round((wins / total) * 100) : 62; // Default empirical base if small sample
       
-      const callTrades = sTrades.filter(t => t.type === 'CALL');
+      const callTrades = sTrades.filter(t => t.type === 'LONG' || t.type === 'CALL');
       const callWins = callTrades.filter(t => t.result === 'WIN').length;
-      const putTrades = sTrades.filter(t => t.type === 'PUT');
+      const putTrades = sTrades.filter(t => t.type === 'SHORT' || t.type === 'PUT');
       const putWins = putTrades.filter(t => t.result === 'WIN').length;
 
       const netPnl = sTrades.reduce((acc, t) => acc + t.pnl, 0);
@@ -176,12 +176,12 @@ export const PredictiveAnalytics: React.FC<PredictiveAnalyticsProps> = ({ trades
       else if (selectedHour >= 1 && selectedHour <= 4) timeModifier = -2.0; // Asian low ATR
     }
 
-    // Directional (CALL / PUT) modifier for strategy
+    // Directional (LONG / SHORT) modifier for strategy
     let directionModifier = 0;
-    if (selectedDirection === 'CALL' && strat.callTotal >= 3) {
+    if (selectedDirection === 'LONG' && strat.callTotal >= 3) {
       const callWR = (strat.callWins / strat.callTotal) * 100;
       directionModifier = (callWR - strat.winRate) * 0.25;
-    } else if (selectedDirection === 'PUT' && strat.putTotal >= 3) {
+    } else if (selectedDirection === 'SHORT' && strat.putTotal >= 3) {
       const putWR = (strat.putWins / strat.putTotal) * 100;
       directionModifier = (putWR - strat.winRate) * 0.25;
     }
@@ -219,7 +219,7 @@ export const PredictiveAnalytics: React.FC<PredictiveAnalyticsProps> = ({ trades
     // Bound logically between 20% and 92%
     const forecastedWinRate = Math.max(20, Math.min(92, parseFloat(rawProb.toFixed(1))));
 
-    // Quantitative Binary Options Expectancy:
+    // Quantitative Derivative Execution Expectancy:
     // Payout = 82% (0.82 gain per $1 risked on win, -$1 on loss)
     const payoutRate = 0.82;
     const breakEvenWinRate = (1 / (1 + payoutRate)) * 100; // ~54.95%
@@ -229,7 +229,7 @@ export const PredictiveAnalytics: React.FC<PredictiveAnalyticsProps> = ({ trades
     // EV per $100 trade
     const expectedValue100 = (winProb * 82) - (lossProb * 100);
     
-    // Kelly Criterion % for Binary Options:
+    // Kelly Criterion % for Asymmetric Derivatives:
     // f* = (p * b - q) / b where b = 0.82, p = winProb, q = 1 - winProb
     let kellyFraction = 0;
     if (expectedValue100 > 0) {
@@ -406,25 +406,25 @@ export const PredictiveAnalytics: React.FC<PredictiveAnalyticsProps> = ({ trades
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setSelectedDirection('CALL')}
+                    onClick={() => setSelectedDirection('LONG')}
                     className={`py-2 rounded-lg text-xs font-mono font-bold transition flex items-center justify-center gap-1 ${
-                      selectedDirection === 'CALL'
+                      selectedDirection === 'LONG'
                         ? 'bg-emerald-950 text-emerald-300 border border-emerald-700 shadow'
                         : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-slate-200'
                     }`}
                   >
-                    <TrendingUp className="w-3.5 h-3.5" /> CALL
+                    <TrendingUp className="w-3.5 h-3.5" /> LONG
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSelectedDirection('PUT')}
+                    onClick={() => setSelectedDirection('SHORT')}
                     className={`py-2 rounded-lg text-xs font-mono font-bold transition flex items-center justify-center gap-1 ${
-                      selectedDirection === 'PUT'
+                      selectedDirection === 'SHORT'
                         ? 'bg-rose-950 text-rose-300 border border-rose-700 shadow'
                         : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-slate-200'
                     }`}
                   >
-                    <TrendingDown className="w-3.5 h-3.5" /> PUT
+                    <TrendingDown className="w-3.5 h-3.5" /> SHORT
                   </button>
                 </div>
               </div>
@@ -816,8 +816,8 @@ export const PredictiveAnalytics: React.FC<PredictiveAnalyticsProps> = ({ trades
                   <th className="py-2.5 px-3">Strategy Setup</th>
                   <th className="py-2.5 px-3">Total Verified</th>
                   <th className="py-2.5 px-3">Historical Win Rate</th>
-                  <th className="py-2.5 px-3">CALL Accuracy</th>
-                  <th className="py-2.5 px-3">PUT Accuracy</th>
+                  <th className="py-2.5 px-3">LONG Accuracy</th>
+                  <th className="py-2.5 px-3">SHORT Accuracy</th>
                   <th className="py-2.5 px-3">Avg P&L / Trade</th>
                   <th className="py-2.5 px-3 text-right">Edge Rating</th>
                 </tr>

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Calendar as CalendarIcon, TrendingUp, Plus, Trash2, ArrowUpRight, ArrowDownRight, Tag, HelpCircle, FileText, ChevronLeft, ChevronRight, RotateCcw, Filter, X, Flame, Sparkles } from 'lucide-react';
-import { Trade, RiskLimits, StrategyId, TradingSession } from '../types';
+import { Trade, RiskLimits, StrategyId, TradingSession, ExecutionType } from '../types';
 import { approvedStrategies } from '../data';
 
 interface PnlCalendarProps {
@@ -68,7 +68,7 @@ export const PnlCalendar: React.FC<PnlCalendarProps> = ({ trades, setTrades, ris
     date: new Date().toISOString().split('T')[0],
     time: new Date().toTimeString().slice(0, 5),
     strategyId: 'trend_continuation' as StrategyId,
-    type: 'CALL' as 'CALL' | 'PUT',
+    type: 'LONG' as ExecutionType,
     amount: 20,
     result: 'WIN' as 'WIN' | 'LOSS' | 'TIE',
     payoutRate: 82,
@@ -444,7 +444,7 @@ export const PnlCalendar: React.FC<PnlCalendarProps> = ({ trades, setTrades, ris
 
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
-                  <span className="text-slate-400 uppercase tracking-wider block mb-1">S.B. Allocation Amount ($)</span>
+                  <span className="text-slate-400 uppercase tracking-wider block mb-1">Position Size / Risk ($)</span>
                   <input
                     type="number"
                     required
@@ -455,12 +455,12 @@ export const PnlCalendar: React.FC<PnlCalendarProps> = ({ trades, setTrades, ris
                   />
                 </label>
                 <label className="block">
-                  <span className="text-slate-400 uppercase tracking-wider block mb-1">Payout Multiplier (%)</span>
+                  <span className="text-slate-400 uppercase tracking-wider block mb-1">Target Return / Payout (%)</span>
                   <input
                     type="number"
                     required
-                    min="50"
-                    max="100"
+                    min="10"
+                    max="500"
                     className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-200 font-mono focus:border-slate-700 outline-none"
                     value={formData.payoutRate}
                     onChange={e => setFormData(prev => ({ ...prev, payoutRate: Math.max(10, parseFloat(e.target.value) || 0) }))}
@@ -483,29 +483,29 @@ export const PnlCalendar: React.FC<PnlCalendarProps> = ({ trades, setTrades, ris
                 </label>
                 
                 <label className="block">
-                  <span className="text-slate-400 uppercase tracking-wider block mb-1">Contract Entry Direction</span>
+                  <span className="text-slate-400 uppercase tracking-wider block mb-1">Execution Direction</span>
                   <div className="grid grid-cols-2 gap-1.5">
                     <button
                       type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, type: 'CALL' }))}
+                      onClick={() => setFormData(prev => ({ ...prev, type: 'LONG' }))}
                       className={`py-1.5 rounded font-mono text-[10px] font-bold border transition ${
-                        formData.type === 'CALL'
+                        formData.type === 'LONG' || formData.type === 'CALL'
                           ? 'bg-emerald-950 border-emerald-500 text-emerald-400'
                           : 'bg-slate-950 border-slate-800 text-slate-400'
                       }`}
                     >
-                      ▲ BUY/CALL
+                      ▲ LONG
                     </button>
                     <button
                       type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, type: 'PUT' }))}
+                      onClick={() => setFormData(prev => ({ ...prev, type: 'SHORT' }))}
                       className={`py-1.5 rounded font-mono text-[10px] font-bold border transition ${
-                        formData.type === 'PUT'
+                        formData.type === 'SHORT' || formData.type === 'PUT'
                           ? 'bg-rose-955 border-rose-600 text-rose-400'
                           : 'bg-slate-950 border-slate-800 text-slate-400'
                       }`}
                     >
-                      ▼ SELL/PUT
+                      ▼ SHORT
                     </button>
                   </div>
                 </label>
@@ -550,7 +550,7 @@ export const PnlCalendar: React.FC<PnlCalendarProps> = ({ trades, setTrades, ris
               </label>
 
               <label className="block">
-                <span className="text-slate-400 uppercase tracking-wider block mb-1 font-mono">Contract Log Notes</span>
+                <span className="text-slate-400 uppercase tracking-wider block mb-1 font-mono">Execution Rationale & Notes</span>
                 <textarea
                   className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-slate-200 font-sans focus:border-slate-700 outline-none h-16 resize-none"
                   placeholder="Explain structural invalidation, price action wicks, or mistake logs..."
@@ -563,7 +563,7 @@ export const PnlCalendar: React.FC<PnlCalendarProps> = ({ trades, setTrades, ris
                 type="submit"
                 className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 p-2.5 rounded font-mono font-bold transition flex items-center justify-center gap-1.5 shadow"
               >
-                <Plus className="w-4 h-4 text-slate-950" /> LOG CONTRACT ENTRY
+                <Plus className="w-4 h-4 text-slate-950" /> RECORD EXECUTION ORDER
               </button>
             </form>
           </div>
@@ -745,7 +745,7 @@ export const PnlCalendar: React.FC<PnlCalendarProps> = ({ trades, setTrades, ris
             <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-indigo-400" />
-                <h3 className="font-sans font-medium text-slate-100 text-lg">Historical S.B. Contract Ledger</h3>
+                <h3 className="font-sans font-medium text-slate-100 text-lg">Historical Execution Ledger</h3>
               </div>
               <div className="flex items-center gap-2">
                 {selectedDayFilter && (
@@ -762,21 +762,21 @@ export const PnlCalendar: React.FC<PnlCalendarProps> = ({ trades, setTrades, ris
                 <span className="text-xs font-mono text-slate-400">
                   {selectedDayFilter 
                     ? `${trades.filter(t => t.date === selectedDayFilter).length} on date`
-                    : `${trades.length} contracts`}
+                    : `${trades.length} executions`}
                 </span>
               </div>
             </div>
 
             {trades.length === 0 ? (
               <div className="h-44 flex items-center justify-center text-xs text-slate-500 font-mono text-center border border-dashed border-slate-800 rounded-lg">
-                No active trade logs. Use the Left panel to record your standard binary options contracts.
+                No active trade logs. Use the execution panel to record your institutional derivative executions.
               </div>
             ) : (() => {
               const displayList = selectedDayFilter ? trades.filter(t => t.date === selectedDayFilter) : trades;
               if (displayList.length === 0) {
                 return (
                   <div className="h-32 flex flex-col items-center justify-center text-xs text-slate-400 font-mono text-center border border-dashed border-slate-800 rounded-lg p-4 space-y-2">
-                    <p>No logged contracts found for date: <strong className="text-indigo-400">{selectedDayFilter}</strong>.</p>
+                    <p>No logged executions found for date: <strong className="text-indigo-400">{selectedDayFilter}</strong>.</p>
                     <button
                       type="button"
                       onClick={() => setSelectedDayFilter(null)}
@@ -792,6 +792,8 @@ export const PnlCalendar: React.FC<PnlCalendarProps> = ({ trades, setTrades, ris
                 <div className="max-h-96 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
                   {displayList.map(trade => {
                     const strat = approvedStrategies.find(s => s.id === trade.strategyId);
+                    const isLong = trade.type === 'LONG' || trade.type === 'CALL';
+                    const displayType = trade.type === 'CALL' ? 'LONG' : trade.type === 'PUT' ? 'SHORT' : trade.type;
                     return (
                       <div
                         key={trade.id}
@@ -809,10 +811,10 @@ export const PnlCalendar: React.FC<PnlCalendarProps> = ({ trades, setTrades, ris
                             }`}>
                               {trade.result}
                             </span>
-                            <span className={`font-mono px-1.5 py-0.5 rounded text-[9px] ${
-                              trade.type === 'CALL' ? 'bg-emerald-950/20 text-emerald-400 border border-emerald-900/20' : 'bg-rose-955/15 text-rose-400 border border-rose-900/10'
+                            <span className={`font-mono px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                              isLong ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/40' : 'bg-rose-955/20 text-rose-400 border border-rose-900/30'
                             }`}>
-                              {trade.type}
+                              {displayType}
                             </span>
                             <span className="text-slate-500 font-mono">{trade.date} {trade.time}</span>
                             <span className="text-slate-500 font-mono">[{trade.session}]</span>

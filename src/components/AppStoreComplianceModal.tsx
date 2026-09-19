@@ -134,7 +134,7 @@ export const AppStoreComplianceModal: React.FC<AppStoreComplianceModalProps> = (
               <div className="space-y-4 text-xs font-sans text-slate-300 bg-slate-950/40 p-5 rounded-xl border border-slate-800/80">
                 <h3 className="text-sm font-semibold text-slate-100 font-mono uppercase tracking-wide">1. High-Risk Investment Warning</h3>
                 <p>
-                  Trading binary options and financial derivative contracts carries a high level of risk and can result in the complete loss of all invested capital. Before deciding to trade binary options, foreign exchange, or commodities, you should carefully consider your investment objectives, level of experience, and risk appetite.
+                  Trading futures, equities, foreign exchange, and financial derivative contracts carries a high level of risk and can result in the complete loss of all invested capital. Before deciding to trade quantitative derivatives, futures, foreign exchange, or equities, you should carefully consider your investment objectives, level of experience, and risk appetite.
                 </p>
 
                 <h3 className="text-sm font-semibold text-slate-100 font-mono uppercase tracking-wide">2. No Financial Advice or Guarantees</h3>
@@ -183,7 +183,7 @@ export const AppStoreComplianceModal: React.FC<AppStoreComplianceModalProps> = (
             <div className="space-y-4 text-xs font-sans text-slate-300 bg-slate-950/40 p-5 rounded-xl border border-slate-800/80">
               <h3 className="text-sm font-semibold text-slate-100 font-mono uppercase tracking-wide">Standard End User License Agreement (EULA)</h3>
               <p>
-                By downloading, accessing, or using the Binary Options Operating System ("Application"), you agree to be bound by the terms and conditions outlined herein.
+                By downloading, accessing, or using the NeuroTactix Quantitative Execution & Cognitive Risk Terminal ("Application"), you agree to be bound by the terms and conditions outlined herein.
               </p>
 
               <h4 className="font-semibold text-slate-200">1. License Grant</h4>
@@ -198,7 +198,7 @@ export const AppStoreComplianceModal: React.FC<AppStoreComplianceModalProps> = (
 
               <h4 className="font-semibold text-slate-200">3. Age Restriction</h4>
               <p>
-                This application is rated 17+ (or legal age of majority in your jurisdiction) due to financial simulation and high-risk derivative trading subject matter.
+                This application is rated 17+ (or legal age of majority in your jurisdiction) due to financial simulation and derivative risk subject matter.
               </p>
             </div>
           )}
@@ -215,10 +215,10 @@ export const AppStoreComplianceModal: React.FC<AppStoreComplianceModalProps> = (
                     <span className="text-[10px] text-emerald-400 bg-emerald-950 px-1.5 py-0.5 rounded">Configured</span>
                   </div>
                   <div className="space-y-1.5 text-slate-400">
-                    <div><span className="text-slate-500">App Name:</span> Binary Options OS: Journal & Coach</div>
-                    <div><span className="text-slate-500">Bundle ID:</span> <code className="text-indigo-300">com.secondchance.binaryoptionsos</code></div>
+                    <div><span className="text-slate-500">App Name:</span> NeuroTactix: Quant Risk Terminal</div>
+                    <div><span className="text-slate-500">Bundle ID:</span> <code className="text-indigo-300">com.neurotactix.terminal</code></div>
                     <div><span className="text-slate-500">Primary Category:</span> Finance / Productivity</div>
-                    <div><span className="text-slate-500">Age Rating:</span> 17+ (Frequent Financial Analysis)</div>
+                    <div><span className="text-slate-500">Age Rating:</span> 17+ (Financial Analytics & Simulation)</div>
                   </div>
                 </div>
 
@@ -229,10 +229,10 @@ export const AppStoreComplianceModal: React.FC<AppStoreComplianceModalProps> = (
                     <span className="text-[10px] text-emerald-400 bg-emerald-950 px-1.5 py-0.5 rounded">Configured</span>
                   </div>
                   <div className="space-y-1.5 text-slate-400">
-                    <div><span className="text-slate-500">App Title:</span> Binary Options Trading Journal OS</div>
-                    <div><span className="text-slate-500">Package Name:</span> <code className="text-emerald-300">com.secondchance.binaryoptionsos</code></div>
+                    <div><span className="text-slate-500">App Title:</span> NeuroTactix: Quant Execution OS</div>
+                    <div><span className="text-slate-500">Package Name:</span> <code className="text-emerald-300">com.neurotactix.terminal</code></div>
                     <div><span className="text-slate-500">Category:</span> Finance (Tools & Trackers)</div>
-                    <div><span className="text-slate-500">Financial Decl.:</span> Non-Custodial Journaling Tool</div>
+                    <div><span className="text-slate-500">Financial Decl.:</span> Non-Custodial Journaling & Analytics Tool</div>
                   </div>
                 </div>
 
@@ -278,7 +278,7 @@ export const AppStoreComplianceModal: React.FC<AppStoreComplianceModalProps> = (
                   </span>
                   <button
                     onClick={() => handleCopy(
-                      "Binary Options Trading OS is an executive trading journal, risk manager, and discipline coach. It does not execute live trades, hold customer deposits, or connect to brokerage accounts. All logs and risk rules are tracked for personal education and statistical review.",
+                      "NeuroTactix OS is an institutional quantitative execution journal, risk manager, and cognitive discipline terminal. It does not execute live orders directly, hold customer deposits, or connect to brokerage clearing accounts. All logs, replay simulations, and risk rules are tracked for personal education and statistical review.",
                       "review_notes"
                     )}
                     className="text-[11px] font-mono text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
@@ -288,7 +288,7 @@ export const AppStoreComplianceModal: React.FC<AppStoreComplianceModalProps> = (
                   </button>
                 </div>
                 <p className="text-slate-400 font-sans leading-relaxed text-[11px] bg-slate-900 p-3 rounded border border-slate-800">
-                  "Binary Options Trading OS is an executive trading journal, risk manager, and discipline coach. It does not execute live trades, hold customer deposits, or connect to brokerage accounts. All logs and risk rules are tracked for personal education and statistical review."
+                  "NeuroTactix OS is an institutional quantitative execution journal, risk manager, and cognitive discipline terminal. It does not execute live orders directly, hold customer deposits, or connect to brokerage clearing accounts. All logs, replay simulations, and risk rules are tracked for personal education and statistical review."
                 </p>
               </div>
 

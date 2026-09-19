@@ -50,7 +50,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     } catch (err: any) {
       console.error("Gemini query failed:", err);
       setIsLoading(false);
-      const fallbackResponse = `Understood. I have scanned the command "${text}". (Operating under Standby Feed).\n\n* **Risk Control**: Maintain strict risk limits (1-2% of balance per trade).\n* **Technical Confluence**: Verify 5-minute trend direction and EMA alignment before placing contracts.\n* **Vercel Setup Note**: If deploying on Vercel, ensure \`GEMINI_API_KEY\` is added to your Vercel Project Settings > Environment Variables.`;
+      const fallbackResponse = `Understood. I have scanned the command "${text}". (Operating under Standby Feed).\n\n* **Risk Control**: Maintain strict risk limits (1-2% of balance per trade).\n* **Technical Confluence**: Verify 5-minute trend direction and EMA alignment before executing orders.\n* **Vercel Setup Note**: If deploying on Vercel, ensure \`GEMINI_API_KEY\` is added to your Vercel Project Settings > Environment Variables.`;
       appendSystemMessage(fallbackResponse, 'AI Trade Coach (Standby)');
     }
   };
@@ -192,7 +192,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
 
     if (lower.includes('routine') || lower.includes('checklist') || lower.includes('protocol')) {
       onNavigate('routine');
-      const response = "Daily Routine checklist loaded. Complete your pre-flight market checks prior to logging contracts.";
+      const response = "Daily Routine checklist loaded. Complete your pre-flight market checks prior to committing executions.";
       setTimeout(() => appendSystemMessage(response, 'Daily Routine'), 600);
       return;
     }
@@ -281,11 +281,11 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       return;
     }
 
-    // 4. Quick Contract logs
+    // 4. Quick Execution logs
     if (lower.includes('log win') || lower.includes('log a win') || lower.includes('won a trade')) {
       onAddQuickTrade('WIN');
       onNavigate('calendar');
-      const response = "Executing rapid voice logger: Contract logged as a WIN. Sizing consistency set to match system presets.";
+      const response = "Executing rapid voice logger: Execution logged as a WIN. Sizing consistency set to match system presets.";
       setTimeout(() => appendSystemMessage(response, 'PnL Calendar Generator'), 600);
       return;
     }
@@ -293,7 +293,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
     if (lower.includes('log loss') || lower.includes('log a loss') || lower.includes('lost a trade')) {
       onAddQuickTrade('LOSS');
       onNavigate('calendar');
-      const response = "Executing rapid voice logger: Contract logged as a LOSS. Daily safety limits scanned.";
+      const response = "Executing rapid voice logger: Execution logged as a LOSS. Daily safety limits scanned.";
       setTimeout(() => appendSystemMessage(response, 'PnL Calendar Generator'), 600);
       return;
     }
@@ -369,7 +369,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-805 rounded-xl h-[460px] flex flex-col justify-between overflow-hidden">
+    <div className="bg-slate-900 border border-slate-800 rounded-xl h-full min-h-[440px] lg:h-[460px] flex flex-col justify-between overflow-hidden shadow-xl">
       
       {/* Header and Controls */}
       <div className="bg-slate-950 p-4 border-b border-slate-850 flex items-center justify-between">

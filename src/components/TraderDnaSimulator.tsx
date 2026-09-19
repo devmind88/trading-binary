@@ -131,7 +131,7 @@ export const TraderDnaSimulator: React.FC<TraderDnaSimulatorProps> = ({
         recommendedTimeframe: '2M – 5M Structured Trend Channels',
         optimalRiskPerTrade: '1.0% flat stake',
         recommendedMaxTradesDaily: 6,
-        psychologicalProfile: 'Calculated and systematic. Understands that survival in binary options is 100% determined by asymmetric risk preservation.',
+        psychologicalProfile: 'Calculated and systematic. Understands that survival in leveraged derivatives is 100% determined by asymmetric risk preservation.',
         dailyGoldenRule: 'Trust your verified technical checklist. Once all conditions are met, execute without second-guessing.',
         disciplineScore,
         patienceScore,
@@ -161,7 +161,7 @@ export const TraderDnaSimulator: React.FC<TraderDnaSimulatorProps> = ({
   // 2. Monte Carlo Risk & Ruin Simulation State
   const [simStartingBalance, setSimStartingBalance] = useState<number>(riskLimits.startingBalance || 1000);
   const [simWinRate, setSimWinRate] = useState<number>(65);
-  const [simPayoutPct, setSimPayoutPct] = useState<number>(85); // 85% binary payout
+  const [simPayoutPct, setSimPayoutPct] = useState<number>(85); // 85% derivative payout
   const [simRiskPerTradePct, setSimRiskPerTradePct] = useState<number>(2.0);
   const [simTradesCount, setSimTradesCount] = useState<number>(100);
   const [simNumPaths, setSimNumPaths] = useState<number>(50); // 50 simulated random paths
@@ -237,7 +237,7 @@ export const TraderDnaSimulator: React.FC<TraderDnaSimulatorProps> = ({
     };
   }, [simStartingBalance, simWinRate, simPayoutPct, simRiskPerTradePct, simTradesCount, simNumPaths]);
 
-  // 3. Exact Binary Compounder & Kelly Criterion Calculator
+  // 3. Exact Derivative Compounder & Kelly Criterion Calculator
   const [calcBankroll, setCalcBankroll] = useState<number>(1000);
   const [calcWinRate, setCalcWinRate] = useState<number>(68);
   const [calcPayout, setCalcPayout] = useState<number>(85);
@@ -250,12 +250,12 @@ export const TraderDnaSimulator: React.FC<TraderDnaSimulatorProps> = ({
     const b = calcPayout / 100;
     const q = 1 - p;
 
-    // Standard Kelly Formula for Binary Options:
+    // Standard Kelly Formula for Asymmetric Derivatives:
     // Kelly % = (b*p - q) / b = ( (Payout * WinRate) - LossRate ) / Payout
     const rawKelly = (b * p - q) / b;
     const fullKellyPct = Math.max(0, Math.min(25, rawKelly * 100));
     const halfKellyPct = fullKellyPct / 2; // Institutional Recommendation
-    const quarterKellyPct = fullKellyPct / 4; // Conservative Binary Standard
+    const quarterKellyPct = fullKellyPct / 4; // Conservative Derivative Standard
 
     // Compounding schedule simulation
     const dailySchedule: Array<{ day: number; balance: number; dailyProfit: number; contractSize: number }> = [];
@@ -498,7 +498,7 @@ export const TraderDnaSimulator: React.FC<TraderDnaSimulatorProps> = ({
                 />
               </div>
 
-              {/* Binary Payout Rate */}
+              {/* Execution Payout Rate */}
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs font-mono">
                   <span className="text-slate-400">Broker Payout (%)</span>
@@ -532,7 +532,7 @@ export const TraderDnaSimulator: React.FC<TraderDnaSimulatorProps> = ({
                 />
                 {simRiskPerTradePct > 3 && (
                   <span className="text-[10px] font-mono text-rose-400 block leading-tight">
-                    ⚠ Warning: Risking &gt;3% on binary options drastically increases mathematical risk of ruin.
+                    ⚠ Warning: Risking &gt;3% per derivative execution drastically increases mathematical risk of ruin.
                   </span>
                 )}
               </div>
@@ -541,7 +541,7 @@ export const TraderDnaSimulator: React.FC<TraderDnaSimulatorProps> = ({
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs font-mono">
                   <span className="text-slate-400">Trade Horizon</span>
-                  <span className="text-slate-200 font-bold">{simTradesCount} contracts</span>
+                  <span className="text-slate-200 font-bold">{simTradesCount} executions</span>
                 </div>
                 <input
                   type="range"
